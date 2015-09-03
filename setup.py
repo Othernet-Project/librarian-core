@@ -20,9 +20,12 @@ setup(
     install_requires=[
         'bottle',
         'bottle-utils-common',
+        'bottle-utils-ajax',
         'bottle-utils-csrf',
+        'bottle-utils-form',
         'bottle-utils-html',
         'bottle-utils-i18n',
+        'bottle-utils-lazy',
         'webassets',
         'Mako',
     ],
