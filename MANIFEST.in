@@ -1,2 +1,2 @@
-include README.rst
 recursive-include librarian_core *
+recursive-exclude tests *
