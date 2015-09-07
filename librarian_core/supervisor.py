@@ -153,6 +153,8 @@ class Supervisor:
                             self,
                             member=member,
                             config=config)
+        logging.debug("LOADED: {0}".format('::'.join([member['pkg_path'],
+                                                      member['name']])))
 
     def _load_components(self):
         components = self.config['app.components']
@@ -163,7 +165,10 @@ class Supervisor:
 
         loader = DependencyLoader(components, self.COMPONENT_META)
         for member in loader.load():
-            self._install_component_member(member)
+            try:
+                self._install_component_member(member)
+            except Exception:
+                logging.exception('Component member installation failed.')
 
     def _enter_background_loop(self):
         while True:
