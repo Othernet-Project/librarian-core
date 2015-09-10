@@ -2,10 +2,9 @@ import logging
 import os
 import pkgutil
 import sys
-import time
 
-from bottle import Bottle
-from gevent import pywsgi
+import bottle
+import gevent
 
 from .confloader import get_config_path, ConfDict
 from .dependencies import DependencyLoader
@@ -48,7 +47,7 @@ class Supervisor:
 
     def __init__(self, root_dir):
         self.server = None
-        self.app = self.wsgi = Bottle()
+        self.app = self.wsgi = bottle.Bottle()
         self.app.supervisor = self
         self.events = PubSub()
         self.exts = ExtContainer()
@@ -172,7 +171,7 @@ class Supervisor:
 
     def _enter_background_loop(self):
         while True:
-            time.sleep(self.LOOP_INTERVAL)
+            gevent.sleep(self.LOOP_INTERVAL)
             # Fire background event
             self.events.publish(self.BACKGROUND, self)
 
@@ -181,7 +180,9 @@ class Supervisor:
         self.events.publish(self.PRE_START, self)
         host = self.config['app.bind']
         port = self.config['app.port']
-        self.server = pywsgi.WSGIServer((host, port), self.wsgi, log=None)
+        self.server = gevent.pywsgi.WSGIServer((host, port),
+                                               self.wsgi,
+                                               log=None)
         self.server.start()  # non-blocking
         assert self.server.started, 'Expected server to be running'
         logging.debug("Started server on http://%s:%s/", host, port)
