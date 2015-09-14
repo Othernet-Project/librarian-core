@@ -95,10 +95,12 @@ class DependencyLoader(object):
                 # in case an installed app has no significant members for core
                 # to be loaded, add a noop `initialize` hook so it will be
                 # installed nevertheless
-                dep_id = '{0}.hooks.initialize'.format(pkg_name)
+                mod_name = '.'.join([pkg_name, 'hooks'])
+                dep_id = '{0}.initialize'.format(mod_name)
                 self._dep_tree[dep_id] = dict(fn=lambda x: x,
                                               name='initialize',
                                               type='hooks',
+                                              mod_name=mod_name,
                                               pkg_name=pkg_name,
                                               pkg_path=pkg_path)
                 continue
@@ -118,6 +120,7 @@ class DependencyLoader(object):
                         self._dep_tree[dep_id] = dict(fn=fn,
                                                       name=fn.__name__,
                                                       type=module_name(mod),
+                                                      mod_name=mod.__name__,
                                                       pkg_name=pkg_name,
                                                       pkg_path=pkg_path,
                                                       **dependencies)
