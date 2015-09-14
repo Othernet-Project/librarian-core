@@ -92,13 +92,11 @@ class Supervisor:
         self.config['root'] = root_dir
 
     def _install_hook(self, name, fn, **kwargs):
-        # the `initialize` hook is a special hook that is not fired by the
-        # event system, but called individually, only once, for the component
-        # right at the moment after it has been loaded
+        self.events.subscribe(name, fn)
+        # the initialize hook must be fired immediately in the scope to
+        # which it belongs only
         if name == self.INITIALIZE:
-            fn(self)
-        else:
-            self.events.subscribe(name, fn)
+            self.events.publish(name, self, scope=kwargs['mod_name'])
 
     def _install_routes(self, fn, **kwargs):
         route_config = fn(self.config)
