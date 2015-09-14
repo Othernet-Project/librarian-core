@@ -32,6 +32,24 @@ def test_publish_has_listeners(pubsub):
     order_checker.assert_has_calls([mock.call('first'), mock.call('second')])
 
 
+def test_publish_to_scope(pubsub):
+    first = mock.MagicMock()
+    first.__module__ = 'librarian_first_component.module'
+
+    second = mock.MagicMock()
+    second.__module__ = 'librarian_second_component.module'
+
+    pubsub._subscribers['myevent'] = [first, second]
+    pubsub.publish('myevent',
+                   1,
+                   2,
+                   a='test',
+                   scope='librarian_second_component.module')
+
+    assert not first.called
+    second.assert_called_once_with(1, 2, a='test')
+
+
 def test_subscribe_new(pubsub):
     assert 'test' not in pubsub._subscribers
     first = mock.Mock()
