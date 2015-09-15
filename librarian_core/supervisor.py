@@ -11,6 +11,7 @@ from .dependencies import DependencyLoader
 from .exts import ExtContainer
 from .pubsub import PubSub
 from .signal_handlers import on_interrupt
+from .tasks import TaskScheduler
 
 
 class EarlyExit(Exception):
@@ -50,6 +51,7 @@ class Supervisor:
         self.app = self.wsgi = Bottle()
         self.app.supervisor = self
         self.events = PubSub()
+        self.tasks = TaskScheduler()
         self.exts = ExtContainer()
 
         # Load core configuration
@@ -170,6 +172,8 @@ class Supervisor:
     def _enter_background_loop(self):
         while True:
             sleep(self.LOOP_INTERVAL)
+            # Process background tasks
+            self.tasks.consume()
             # Fire background event
             self.events.publish(self.BACKGROUND, self)
 
