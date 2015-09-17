@@ -1,33 +1,26 @@
-"""
-tasks.py: Simple task scheduler and consumer
-
-Copyright 2014-2015, Outernet Inc.
-Some rights reserved.
-
-This software is free software licensed under the terms of GPLv3. See COPYING
-file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
-"""
-
 import logging
-import Queue
+
+import gevent
 
 
 class TaskScheduler(object):
 
-    def __init__(self):
-        self._tasks = Queue.Queue()
+    def _execute(self, fn, args, kwargs):
+        try:
+            fn(*args, **kwargs)
+        except Exception:
+            logging.exception("Task execution failed.")
 
-    def schedule(self, fn, *args, **kwargs):
-        self._tasks.put((fn, args, kwargs))
+    def _periodic(self, fn, args, kwargs, delay):
+        self._execute(fn, args, kwargs)
+        gevent.spawn_later(delay, self._periodic, fn, args, kwargs, delay)
 
-    def consume(self):
-        while True:
-            try:
-                (fn, args, kwargs) = self._tasks.get(block=False)
-            except Queue.Empty:
-                break
-            else:
-                try:
-                    fn(*args, **kwargs)
-                except Exception:
-                    logging.exception("Task execution failed.")
+    def schedule(self, fn, args=None, kwargs=None, periodic=False, delay=None):
+        delay = delay or 1
+        args = args or tuple()
+        kwargs = kwargs or dict()
+        if periodic:
+            gevent.spawn_later(delay, self._periodic, fn, args, kwargs, delay)
+        else:
+            gevent.spawn_later(delay, self._execute, fn, args, kwargs)
+

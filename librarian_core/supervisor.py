@@ -172,8 +172,6 @@ class Supervisor:
     def _enter_background_loop(self):
         while True:
             sleep(self.LOOP_INTERVAL)
-            # Process background tasks
-            self.tasks.consume()
             # Fire background event
             self.events.publish(self.BACKGROUND, self)
 
@@ -199,3 +197,4 @@ class Supervisor:
         self.server.stop(5)
         logging.info('Running shutdown hooks')
         self.events.publish(self.SHUTDOWN, self)
+
