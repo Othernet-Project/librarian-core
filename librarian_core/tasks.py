@@ -10,12 +10,13 @@ class TaskScheduler(object):
     PROCESSING = 'PROCESSING'
     NOT_FOUND = 'NOT_FOUND'
 
-    def __init__(self):
+    def __init__(self, consume_tasks_delay=1):
         self._queue = collections.OrderedDict()
         self.current_task = None
-        self._async(1, self._consume)
+        self._consume_tasks_delay = consume_tasks_delay
+        self._async(self._consume_tasks_delay, self._consume)
 
-    def generate_task_id(self):
+    def _generate_task_id(self):
         return uuid.uuid4()
 
     def get_status(self, task_id):
@@ -49,7 +50,7 @@ class TaskScheduler(object):
         else:
             self._execute(task_id, *task)
         finally:
-            self._async(1, self._consume)
+            self._async(self._consume_tasks_delay, self._consume)
 
     def schedule(self, fn, args=None, kwargs=None, delay=None, periodic=False):
         """Schedules a task for execution.
@@ -74,7 +75,7 @@ class TaskScheduler(object):
         """
         args = args or tuple()
         kwargs = kwargs or dict()
-        task_id = self.generate_task_id()
+        task_id = self._generate_task_id()
         if delay is None:
             self._queue[task_id] = (fn, args, kwargs)
         else:
