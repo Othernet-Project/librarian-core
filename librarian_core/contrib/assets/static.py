@@ -1,6 +1,21 @@
 import os
+import shutil
 
 import webassets.script
+
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            copytree(s, d, symlinks, ignore)
+        else:
+            if (not os.path.exists(d) or
+                    os.stat(s).st_mtime - os.stat(d).st_mtime > 1):
+                shutil.copy2(s, d)
 
 
 class Assets:
@@ -139,10 +154,15 @@ class Assets:
         asset_sources = config.get('assets.sources', {})
         asset_sources['root'] = (assets_dir, assets_url)
         for path, url in asset_sources.values():
-            js_path = os.path.join(path, 'src')
-            scss_path = os.path.join(path, 'scss')
-            assets.add_static_source(js_path, url=url)
-            assets.add_static_source(scss_path, url=url)
+            for subdir in os.listdir(path):
+                subpath = os.path.join(path, subdir)
+                if subdir in ('src', 'scss'):
+                    assets.add_static_source(subpath, url=url)
+                # TODO: figure out a way to allow ordinary static folders to
+                # be served directly from the app folder instead of copying it
+                # into the project root
+                elif os.path.isdir(subpath):
+                    copytree(subpath, os.path.join(assets_dir, subdir))
 
         paths = assets.env.load_path
         assets.env.config['COMPASS_CONFIG']['additional_import_paths'] = paths
