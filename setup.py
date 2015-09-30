@@ -28,6 +28,7 @@ setup(
         'bottle-utils-i18n',
         'bottle-utils-lazy',
         'webassets',
+        'cssmin',
         'Mako',
     ],
     classifiers=[
