@@ -16,6 +16,9 @@ EXPORTS = {
     }
 }
 
+DEFAULT_STATIC_ROOT = 'static'
+DEFAULT_STATIC_URL = '/static/'
+
 
 def component_member_loaded(supervisor, member, config):
     supervisor.config.setdefault('assets.sources', {})
@@ -23,8 +26,8 @@ def component_member_loaded(supervisor, member, config):
     supervisor.config.setdefault('assets.css_bundles', [])
     pkg_name = member['pkg_name']
     if pkg_name not in supervisor.config['assets.sources']:
-        static_path = config.pop('assets.directory', None)
-        static_url = config.pop('assets.url', None)
+        static_path = config.pop('assets.directory', DEFAULT_STATIC_ROOT)
+        static_url = config.pop('assets.url', DEFAULT_STATIC_URL)
         js_bundles = config.pop('assets.js_bundles', [])
         css_bundles = config.pop('assets.css_bundles', [])
         if static_path:
