@@ -154,6 +154,9 @@ class Assets:
         asset_sources = config.get('assets.sources', {})
         asset_sources['root'] = (assets_dir, assets_url)
         for path, url in asset_sources.values():
+            if not os.path.exists(path):
+                continue
+
             for subdir in os.listdir(path):
                 subpath = os.path.join(path, subdir)
                 if subdir in ('src', 'scss'):
