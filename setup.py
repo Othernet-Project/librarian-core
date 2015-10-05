@@ -30,6 +30,8 @@ setup(
         'webassets',
         'cssmin',
         'Mako',
+        'python-dateutil',
+        'sqlize',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

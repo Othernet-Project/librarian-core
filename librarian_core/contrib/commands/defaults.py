@@ -1,6 +1,10 @@
 import os
 
 
+def debug_on(arg, supervisor):
+    supervisor.config['app.debug'] = arg
+
+
 def install_default_commands(supervisor):
     default_path = os.path.join(supervisor.config['root'],
                                 supervisor.DEFAULT_CONFIG_FILENAME)
@@ -11,7 +15,7 @@ def install_default_commands(supervisor):
                                       default=default_path,
                                       help='path to configuration file')
     supervisor.exts.commands.register('debug',
-                                      None,
+                                      debug_on,
                                       '--debug',
                                       action='store_true',
                                       help='enable debugging')
