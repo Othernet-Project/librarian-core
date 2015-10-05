@@ -29,6 +29,8 @@ setup(
         'bottle-utils-lazy',
         'webassets',
         'Mako',
+        'python-dateutil',
+        'sqlize',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
