@@ -17,6 +17,8 @@ class PubSub(object):
 
     def _get_scope(self, fn):
         """Determine the scope of the passed in function."""
+        while not hasattr(fn, '__module__'):
+            fn = fn.func
         return fn.__module__
 
     def _is_within_scope(self, fn, scope):

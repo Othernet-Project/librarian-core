@@ -87,8 +87,8 @@ class Supervisor:
 
     def _configure(self, root_dir):
         default_path = os.path.join(root_dir, self.DEFAULT_CONFIG_FILENAME)
-        config_path = get_config_path(default=default_path)
-        self.config = self.app.config = self._load_config(config_path)
+        self.config_path = get_config_path(default=default_path)
+        self.config = self.app.config = self._load_config(self.config_path)
         self.config['root'] = root_dir
 
     def _install_hook(self, name, fn, **kwargs):
