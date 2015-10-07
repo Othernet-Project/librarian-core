@@ -10,9 +10,15 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 
 import logging
 
-from bottle import request, abort
+from bottle import request, redirect, abort
+from bottle_utils.i18n import i18n_url
 
 from librarian_core.contrib.templates.renderer import view
+
+
+def root_handler():
+    default_route_id = request.app.config['app.default_route_id']
+    redirect(i18n_url(default_route_id))
 
 
 @view('403')
@@ -46,6 +52,7 @@ def all_404(path):
 
 def routes(config):
     return (
+        ('sys:root', root_handler, 'GET', '/', dict()),
         # This route handler is added because unhandled missing pages cause
         # bottle to _not_ install any plugins, and some are essential to
         # rendering of the 404 page (e.g., i18n, sessions, auth).

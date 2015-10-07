@@ -17,7 +17,7 @@ class TaskScheduler(object):
         self._async(self._consume_tasks_delay, self._consume)
 
     def _generate_task_id(self):
-        return uuid.uuid4()
+        return uuid.uuid4().hex
 
     def get_status(self, task_id):
         if task_id in self._queue:
