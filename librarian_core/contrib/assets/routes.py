@@ -1,6 +1,6 @@
 import os
 
-from bottle import request, static_file
+from bottle import request, static_file, HTTPError
 from bottle_utils.lazy import caching_lazy
 
 
@@ -11,8 +11,20 @@ def static_root():
     return os.path.join(project_root, static_dir)
 
 
+@caching_lazy
+def static_sources():
+    asset_sources = request.app.config.get('assets.sources', {})
+    paths, _ = zip(*asset_sources.values())
+    return [static_root()] + list(paths)
+
+
 def send_static(path):
-    return static_file(path, root=static_root())
+    for static_root in static_sources():
+        res = static_file(path, static_root)
+        if not isinstance(res, HTTPError):
+            break
+
+    return res
 
 
 @caching_lazy
