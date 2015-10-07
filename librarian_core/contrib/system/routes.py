@@ -11,10 +11,16 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 import logging
 import os
 
-from bottle import request, static_file, abort
+from bottle import request, redirect, static_file, abort
+from bottle_utils.i18n import i18n_url
 from bottle_utils.lazy import caching_lazy
 
 from librarian_core.contrib.templates.renderer import view
+
+
+def root_handler():
+    default_route_id = request.app.config['app.default_route_id']
+    redirect(i18n_url(default_route_id))
 
 
 @caching_lazy
@@ -69,6 +75,7 @@ def all_404(path):
 def routes(config):
     skip_plugins = config['app.skip_plugins']
     return (
+        ('sys:root', root_handler, 'GET', '/', dict()),
         ('sys:static', send_static,
          'GET', '/static/<path:path>',
          dict(no_i18n=True, unlocked=True, skip=skip_plugins)),
