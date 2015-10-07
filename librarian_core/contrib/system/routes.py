@@ -9,32 +9,10 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
 import logging
-import os
 
-from bottle import request, static_file, abort
-from bottle_utils.lazy import caching_lazy
+from bottle import request, abort
 
 from librarian_core.contrib.templates.renderer import view
-
-
-@caching_lazy
-def static_root():
-    project_root = request.app.config['root']
-    static_dir = request.app.config.get('assets.directory', 'static')
-    return os.path.join(project_root, static_dir)
-
-
-def send_static(path):
-    return static_file(path, root=static_root())
-
-
-@caching_lazy
-def favicon_path():
-    return request.app.config.get('favicon.path', 'favicon.ico')
-
-
-def send_favicon():
-    return send_static(favicon_path())
 
 
 @view('403')
@@ -67,17 +45,9 @@ def all_404(path):
 
 
 def routes(config):
-    skip_plugins = config['app.skip_plugins']
     return (
-        ('sys:static', send_static,
-         'GET', '/static/<path:path>',
-         dict(no_i18n=True, unlocked=True, skip=skip_plugins)),
-        ('sys:favicon', send_favicon,
-         'GET', '/favicon.ico',
-         dict(no_i18n=True, unlocked=True, skip=skip_plugins)),
         # This route handler is added because unhandled missing pages cause
         # bottle to _not_ install any plugins, and some are essential to
         # rendering of the 404 page (e.g., i18n, sessions, auth).
-        ('sys:all404', all_404,
-         ['GET', 'POST'], '<path:path>', dict()),
+        ('sys:all404', all_404, ['GET', 'POST'], '<path:path>', dict()),
     )
