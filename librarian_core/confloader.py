@@ -94,9 +94,16 @@ class ConfDict(dict):
             raise ConfigurationError(
                 "Missing or empty configuration file at '{}'".format(path))
 
-        child_paths = default_paths = []
+        child_paths = []
+        default_paths = []
+        extensions = {}
         for section in sections:
             for key, value in parser.items(section):
+                extends = False
+                if key.startswith('+'):
+                    extends = True
+                    key = key[1:]
+
                 if section not in ('DEFAULT', 'bottle'):
                     compound_key = '{}.{}'.format(section, key)
                 else:
@@ -110,14 +117,23 @@ class ConfDict(dict):
                 elif section == 'config' and key == 'include':
                     child_paths = value
                 else:
-                    self[compound_key] = value
+                    if extends:
+                        extensions[compound_key] = value
+                    else:
+                        self[compound_key] = value
 
         for default in default_paths:
             self.setdefaults(cls.from_file(default, skip_clean=skip_clean,
                                            base_dir=base_dir))
+
+        for k in extensions:
+            self.setdefault(k, [])
+            self[k].extend(extensions[k])
+
         for child in child_paths:
             self.update(cls.from_file(child, skip_clean=skip_clean,
                                       base_dir=base_dir))
+
         return self
 
     def setdefaults(self, other):
