@@ -19,8 +19,11 @@ from librarian_core.contrib.templates.renderer import view
 
 
 def root_handler():
-    default_route_id = request.app.config['app.default_route_id']
-    redirect(i18n_url(default_route_id))
+    route = request.app.config['app.default_route']
+    if hasattr(request, 'default_route'):
+        route = request.default_route
+
+    redirect(i18n_url(route))
 
 
 @caching_lazy
