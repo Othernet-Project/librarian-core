@@ -24,17 +24,17 @@ def root_handler():
     redirect(i18n_url(route))
 
 
-@view('403')
+@view('errors/403')
 def error_403(exc):
     return dict()
 
 
-@view('404')
+@view('errors/404')
 def error_404(exc):
     return dict(redirect_url='/')
 
 
-@view('500')
+@view('errors/500')
 def error_500(exc):
     logging.error("Unhandled error '%s' at %s %s:\n\n%s",
                   exc.exception,
@@ -44,7 +44,7 @@ def error_500(exc):
     return dict(trace=exc.traceback)
 
 
-@view('503')
+@view('errors/503')
 def error_503(exc):
     return dict()
 
