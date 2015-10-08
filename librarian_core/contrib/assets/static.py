@@ -1,21 +1,6 @@
 import os
-import shutil
 
 import webassets.script
-
-
-def copytree(src, dst, symlinks=False, ignore=None):
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for item in os.listdir(src):
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        if os.path.isdir(s):
-            copytree(s, d, symlinks, ignore)
-        else:
-            if (not os.path.exists(d) or
-                    os.stat(s).st_mtime - os.stat(d).st_mtime > 1):
-                shutil.copy2(s, d)
 
 
 class Assets:
@@ -26,24 +11,15 @@ class Assets:
         self.directory = os.path.abspath(directory)
         self.url = url
         self.debug = debug
-        self.env = webassets.Environment(directory=self.directory, url=url,
-                                         debug=debug, url_expire=True)
+        self.env = webassets.Environment(directory=self.directory,
+                                         url=url,
+                                         debug=debug,
+                                         url_expire=True)
         self.env.append_path(self.directory, url=url)
         self.env.versions = 'hash'
         self.env.manifest = 'file'
         if not debug:
             self.env.auto_build = False
-
-        # Configure Compass
-        self.env.config['COMPASS_CONFIG'] = dict(
-            http_path='/static/',
-            css_dir='css',
-            sass_dir='scss',
-            images_dir='img',
-            javascripts_dir='js',
-            relative_assets=True,
-            output_style='compressed',
-        )
 
     def add_static_source(self, path, url=None):
         """
@@ -79,7 +55,7 @@ class Assets:
         """
         assets = [self._js_path(a) for a in assets]
         out_path = 'js/' + out + '-%(version)s.js'
-        bundle = webassets.Bundle(*assets, filters='uglifyjs', output=out_path)
+        bundle = webassets.Bundle(*assets, filters='rjsmin', output=out_path)
         self.env.register('js/' + out, bundle)
         return bundle
 
@@ -103,11 +79,9 @@ class Assets:
         This method returns the ``Bundle`` object which can be used to nest
         within other bundles.
         """
-        assets = [self._scss_path(a) for a in assets]
+        assets = [self._css_path(a) for a in assets]
         out_path = 'css/' + out + '-%(version)s.css'
-        bundle = webassets.Bundle(*assets, filters='compass', output=out_path,
-                                  depends=('**/**/**/*.scss', '**/**/*.scss',
-                                           '**/*.scss'))
+        bundle = webassets.Bundle(*assets, filters='cssmin', output=out_path)
         self.env.register('css/' + out, bundle)
         return bundle
 
@@ -124,9 +98,9 @@ class Assets:
         return s
 
     @staticmethod
-    def _scss_path(s):
+    def _css_path(s):
         if type(s) is str:
-            return s + '.scss'
+            return s + '.css'
         return s
 
     @staticmethod
@@ -150,25 +124,11 @@ class Assets:
         assets_url = config['assets.url']
         assets_debug = config['assets.debug']
         assets = cls(assets_dir, assets_url, assets_debug)
-
         asset_sources = config.get('assets.sources', {})
         asset_sources['root'] = (assets_dir, assets_url)
         for path, url in asset_sources.values():
-            if not os.path.exists(path):
-                continue
-
-            for subdir in os.listdir(path):
-                subpath = os.path.join(path, subdir)
-                if subdir in ('src', 'scss'):
-                    assets.add_static_source(subpath, url=url)
-                # TODO: figure out a way to allow ordinary static folders to
-                # be served directly from the app folder instead of copying it
-                # into the project root
-                elif os.path.isdir(subpath):
-                    copytree(subpath, os.path.join(assets_dir, subdir))
-
-        paths = assets.env.load_path
-        assets.env.config['COMPASS_CONFIG']['additional_import_paths'] = paths
+            assets.add_static_source(os.path.join(path, 'css'), url=url)
+            assets.add_static_source(os.path.join(path, 'js'), url=url)
 
         js_bundles = cls.merge_bundles(config.get('assets.js_bundles', []))
         for name, contents in js_bundles.items():

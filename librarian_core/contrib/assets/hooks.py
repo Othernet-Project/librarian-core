@@ -2,7 +2,7 @@ import os
 
 import bottle
 
-from .handlers import rebuild_assets
+from .handlers import rebuild_assets, collect_assets
 from .static import Assets
 
 
@@ -44,6 +44,11 @@ def initialize(supervisor):
                                       '--assets',
                                       action='store_true',
                                       help='rebuild static assets')
+    supervisor.exts.commands.register('collect',
+                                      collect_assets,
+                                      '--collect',
+                                      action='store_true',
+                                      help='collect static assets')
 
 
 def init_complete(supervisor):
