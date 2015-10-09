@@ -16,7 +16,7 @@ import logging
 import importlib
 
 
-MTABLE = 'migrations'   # SQL table in which migration data is stored
+MTABLE = 'migration_history'  # SQL table in which migration data is stored
 VERSION_SQL = 'select version from %s where id == 0;' % MTABLE
 REPLACE_SQL = 'replace into %s (id, version) values (0, ?);' % MTABLE
 MIGRATION_TABLE_SQL = """
