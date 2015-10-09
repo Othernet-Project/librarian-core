@@ -5,7 +5,7 @@ from librarian_core import exts as mod
 
 
 def test_placeholder():
-    placeholder = mod.Placeholder()
+    placeholder = mod.Placeholder(mod.Nothing)
     assert isinstance(placeholder(1, 2, a='b'), mod.Placeholder)
     assert isinstance(placeholder.test_func(1, 2, a='b'), mod.Placeholder)
 
@@ -28,6 +28,19 @@ def test_access_extension():
         exts.not_installeld('cache')
     except Exception:
         pytest.fail("Should not care whether it exists or not.")
+
+
+def test_onfail_of_missing_ext():
+    exts = mod.ExtContainer()
+    result = exts(onfail='return this').missing_ext.method(a=1)
+    assert result == 'return this'
+
+    class CustomError(Exception):
+        pass
+
+    exc = CustomError()
+    with pytest.raises(CustomError):
+        exts(onfail=exc).missing()
 
 
 def test_is_installed():

@@ -9,13 +9,24 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
 
+class Nothing(object):
+    pass
+
+
 class Placeholder(object):
 
+    def __init__(self, onfail):
+        self.onfail = onfail
+
     def __call__(self, *args, **kwargs):
-        return Placeholder()
+        if self.onfail is not Nothing:
+            if isinstance(self.onfail, Exception):
+                raise self.onfail
+            return self.onfail
+        return Placeholder(self.onfail)
 
     def __getattr__(self, name):
-        return Placeholder()
+        return Placeholder(self.onfail)
 
 
 class ExtContainer(object):
@@ -23,20 +34,22 @@ class ExtContainer(object):
     the dependencies in question are not installed. Mainly meant to avoid
     putting boilerplate checks in such code to check for their existence.
     """
-    _ext_container_name = '_extensions'
+    _members = ('_extensions', '_onfail')
 
-    def __init__(self):
-        setattr(self, self._ext_container_name, dict())
+    def __init__(self, onfail=Nothing, exts=None):
+        self._onfail = onfail
+        self._extensions = exts or dict()
 
     def __get_extension(self, name):
         exts = object.__getattribute__(self, '_extensions')
         try:
             return exts[name]
         except KeyError:
-            return Placeholder()
+            onfail = object.__getattribute__(self, '_onfail')
+            return Placeholder(onfail)
 
     def __setattr__(self, name, extension):
-        if name == self._ext_container_name:
+        if name in self._members:
             super(ExtContainer, self).__setattr__(name, extension)
         else:
             self._extensions[name] = extension
@@ -48,6 +61,9 @@ class ExtContainer(object):
         return self.__get_extension(name)
 
     __setitem__ = __setattr__
+
+    def __call__(self, onfail):
+        return ExtContainer(onfail=onfail, exts=self._extensions)
 
     def is_installed(self, name):
         """Check whether extension known by `name` is installed or not."""
