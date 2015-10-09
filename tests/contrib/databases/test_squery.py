@@ -1,6 +1,7 @@
 import mock
 
-from librarian_sqlite import squery as mod
+from librarian_core.contrib.databases import squery as mod
+
 
 MOD = mod.__name__
 

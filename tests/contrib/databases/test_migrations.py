@@ -2,7 +2,8 @@ import tempfile
 
 import mock
 
-from librarian_sqlite import migrations as mod
+from librarian_core.contrib.databases import migrations as mod
+
 
 MOD = mod.__name__
 
