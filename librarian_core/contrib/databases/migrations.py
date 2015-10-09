@@ -16,6 +16,7 @@ import logging
 import importlib
 
 
+SQLITE_EXTENSIONS = ('sqlite', 'sqlite-shm', 'sqlite-wal')
 MTABLE = 'migration_history'  # SQL table in which migration data is stored
 VERSION_SQL = 'select version from %s where id == 0;' % MTABLE
 REPLACE_SQL = 'replace into %s (id, version) values (0, ?);' % MTABLE
@@ -86,6 +87,21 @@ def load_mod(module, package):
     return importlib.import_module(name, package=package.__name__)
 
 
+def drop_db(db):
+    """ Delete the passed in database, and reconnect afterwards.
+
+    :param db:  database object
+    """
+    path, extension = os.path.splitext(db.connection.path)
+    db.close()
+    for ext in SQLITE_EXTENSIONS:
+        file_path = '.'.join([path, ext])
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    db.reconnect()
+
+
 def get_version(db):
     """ Query database and return migration version
 
@@ -96,6 +112,7 @@ def get_version(db):
         db.query(VERSION_SQL)
     except sqlite3.OperationalError as err:
         if 'no such table' in str(err):
+            drop_db(db)
             db.query(MIGRATION_TABLE_SQL)
             db.query(REPLACE_SQL, 0)
             return 0
