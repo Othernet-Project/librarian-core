@@ -27,11 +27,12 @@ setup(
         'bottle-utils-html',
         'bottle-utils-i18n',
         'bottle-utils-lazy',
-        'webassets',
         'cssmin',
+        'gevent',
         'Mako',
         'python-dateutil',
         'sqlize',
+        'webassets',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
