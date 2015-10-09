@@ -4,7 +4,7 @@ import time
 import mock
 import pytest
 
-from librarian_cache import cache as mod
+from librarian_core.contrib.cache import cache as mod
 
 
 @pytest.fixture(params=['pylibmc', 'memcache'])

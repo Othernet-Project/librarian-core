@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from librarian_cache import utils as mod
+from librarian_core.contrib.cache import utils as mod
 
 
 def test_generate_key(base_cache):

@@ -1,7 +1,7 @@
 import mock
 
-from librarian_cache import cache
-from librarian_cache import decorators as mod
+from librarian_core.contrib.cache import cache
+from librarian_core.contrib.cache import decorators as mod
 
 
 @mock.patch.object(mod, 'request')
