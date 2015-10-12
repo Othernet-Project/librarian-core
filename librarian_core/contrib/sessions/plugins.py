@@ -6,7 +6,9 @@ from .sessions import SessionExpired, SessionInvalid, Session
 
 
 EXPORTS = {
-    'session_plugin': {},
+    'session_plugin': {
+        'depends_on': ['librarian_core.contrib.databases.plugins.plugin']
+    },
 }
 
 
