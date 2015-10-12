@@ -1,6 +1,12 @@
 """
 migrations.py: functions for managing migrations
 
+Migration versions are tracked using a major and a minor version number. The
+major version number is used to group migrations together, essentially allowing
+to reset them back to 0. It was introduced in the later stages of development
+when the need for resetting an existing database to an empty state came up, but
+with the requirement to drop all the existing migrations for it as well.
+
 Copyright 2014-2015, Outernet Inc.
 Some rights reserved.
 
@@ -8,27 +14,18 @@ This software is free software licensed under the terms of GPLv3. See COPYING
 file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
+import importlib
+import logging
 import os
 import re
 import sys
-import sqlite3
-import logging
-import importlib
 
 
+VERSION_MULTIPLIER = 10000
 SQLITE_EXTENSIONS = ('sqlite', 'sqlite-shm', 'sqlite-wal')
-MTABLE = 'migration_history'  # SQL table in which migration data is stored
-VERSION_SQL = 'select version from %s where id == 0;' % MTABLE
-REPLACE_SQL = 'replace into %s (id, version) values (0, ?);' % MTABLE
-MIGRATION_TABLE_SQL = """
-create table %s
-(
-    id primary_key unique default 0,
-    version integer null
-);
-""" % MTABLE
-MIGRATION_FILE_RE = re.compile('^\d{2}_[^.]+\.sql$')
-PYMOD_RE = re.compile(r'^\d+_[^.]+\.pyc?$', re.I)
+GET_VERSION_SQL = "PRAGMA user_version"
+SET_VERSION_SQL = "PRAGMA user_version = {version:d}"
+PYMOD_RE = re.compile(r'^((\d{2})_(\d{2})_[^.]+)\.pyc?$', re.I)
 
 
 def get_mods(package):
@@ -39,29 +36,31 @@ def get_mods(package):
     any duplicates and return file names without extension.
 
     :param package: package object
-    :returns:       generator containing file names without extension
+    :returns:       list of tuples containing filename without extension,
+                    major_version and minor_version
     """
     pkgdir = package.__path__[0]
-    unique = set(os.path.splitext(f)[0] for f in os.listdir(pkgdir)
-                 if PYMOD_RE.match(f))
-    return sorted(list(unique))
+    matches = filter(None, [PYMOD_RE.match(f) for f in os.listdir(pkgdir)])
+    parse_match = lambda groups: (groups[0], int(groups[1]), int(groups[2]))
+    return sorted(list(set([parse_match(m.groups()) for m in matches])),
+                  key=lambda x: (x[1], x[2]))
 
 
-def get_new(modules, min_ver=0):
+def get_new(modules, min_major_version, min_minor_version):
     """ Get list of migrations that haven't been run yet
 
-    :param modules: iterable containing module names
-    :param min_ver: minimum migration version
-    :returns:       return an iterator that returns only items whose versions
-                    are >= min_ver
+    :param modules:           iterable containing module names
+    :param min_major_version: minimum major version
+    :param min_minor_version: minimum minor version
+    :returns:                 return an iterator that yields only items which
+                              versions are >= min_ver
     """
-    int_first_two = lambda s: int(s[:2])
-    modules = ((f, int_first_two(f)) for f in modules)
-    modules = sorted(modules, key=lambda x: x[1])
-    for mod in modules:
-        if mod[1] < min_ver:
-            continue
-        yield mod
+    for mod_data in modules:
+        (modname, mod_major_version, mod_minor_version) = mod_data
+        if (mod_major_version > min_major_version or
+                (mod_major_version == min_major_version and
+                    mod_minor_version >= min_minor_version)):
+            yield mod_data
 
 
 def load_mod(module, package):
@@ -102,35 +101,59 @@ def drop_db(db):
     db.reconnect()
 
 
+def pack_version(major_version, minor_version):
+    """Pack the two version integers into one int."""
+    return major_version * VERSION_MULTIPLIER + minor_version
+
+
+def unpack_version(version):
+    """Unpack a single version integer into the two major and minor
+    components."""
+    minor_version = version % VERSION_MULTIPLIER
+    major_version = (version - minor_version) / VERSION_MULTIPLIER
+    return (major_version, minor_version)
+
+
 def get_version(db):
-    """ Query database and return migration version
+    """ Query database and return migration version. WARNING: side effecting
+    function! if no version information can be found, any existing database
+    matching the passed one's name will be deleted and recreated.
 
     :param db:  connetion object
-    :returns:   current migration version or -1 if no migrations exist
+    :returns:   current migration version
     """
-    try:
-        db.query(VERSION_SQL)
-    except sqlite3.OperationalError as err:
-        if 'no such table' in str(err):
-            drop_db(db)
-            db.query(MIGRATION_TABLE_SQL)
-            db.query(REPLACE_SQL, 0)
-            return 0
-        raise
-    return db.result.version
+    db.query(GET_VERSION_SQL)
+    version = db.result.user_version
+    if not version:
+        drop_db(db)
+        return (0, 0)
+
+    return unpack_version(version)
 
 
-def run_migration(version, db, mod, conf={}):
+def set_version(db, major_version, minor_version):
+    """ Set database migration version
+
+    :param db:             connetion object
+    :param major_version:  integer major version of migration
+    :param minor_version:  integer minor version of migration
+    """
+    version = pack_version(major_version, minor_version)
+    db.query(SET_VERSION_SQL.format(version=version))
+
+
+def run_migration(major_version, minor_version, db, mod, conf={}):
     """ Run migration script
 
-    :param version: version number of the migration
-    :param db:      database connection object
-    :param path:    path of the migration script
-    :param conf:    application configuration (if any)
+    :param major_version: major version number of the migration
+    :param minor_version: minor version number of the migration
+    :param db:            database connection object
+    :param path:          path of the migration script
+    :param conf:          application configuration (if any)
     """
     with db.transaction():
         mod.up(db, conf)
-        db.query(REPLACE_SQL, version)
+        set_version(db, major_version, minor_version)
 
 
 def migrate(db, package, conf={}):
@@ -142,13 +165,18 @@ def migrate(db, package, conf={}):
     :param package:         package that contains the migrations
     :param conf:            application configuration object
     """
-    ver = get_version(db)
+    (current_major_version, current_minor_version) = get_version(db)
     package = importlib.import_module(package)
-    logging.debug('Migration version for %s is %s', package.__package__, ver)
+    logging.debug('Migration version for %s is %s.%s',
+                  package.__name__,
+                  current_major_version,
+                  current_minor_version)
     mods = get_mods(package)
-    migrations = get_new(mods, ver + 1)
-    for name, version in migrations:
-        mod = load_mod(name, package)
-        run_migration(version, db, mod, conf)
-        logging.debug("Finished migrating to %s", name)
+    migrations = get_new(mods,
+                         current_major_version,
+                         current_minor_version + 1)
+    for (modname, major_version, minor_version) in migrations:
+        mod = load_mod(modname, package)
+        run_migration(major_version, minor_version, db, mod, conf)
+        logging.debug("Finished migrating to %s", modname)
     db.refresh_table_stats()

@@ -5,9 +5,6 @@ import mock
 from librarian_core.contrib.databases import migrations as mod
 
 
-MOD = mod.__name__
-
-
 def mock_module():
     f, path = tempfile.mkstemp()
     with open(path, 'w') as fd:
@@ -19,61 +16,88 @@ def up(db, conf):
     return fd
 
 
-@mock.patch(MOD + '.os.listdir', autospec=True)
-def test_list_modules(listdir):
-    """ Can list Python modules from specified directory """
-    listdir.return_value = ['01_test.py', '02_test.py']
-    mocked_pkg = mock.Mock()
-    mocked_pkg.__path__ = ['foo']
-    m = mod.get_mods(mocked_pkg)
-    assert sorted(list(m)) == ['01_test', '02_test']
+def test_pack_version():
+    assert mod.pack_version(1, 1) == 10001
+    assert mod.pack_version(24, 32) == 240032
+    assert mod.pack_version(6, 56) == 60056
+    assert mod.pack_version(49, 2) == 490002
+    assert mod.pack_version(0, 11) == 11
+    assert mod.pack_version(23, 0) == 230000
 
 
-@mock.patch(MOD + '.os.listdir', autospec=True)
-def test_list_modules_no_dupes(listdir):
+def test_unpack_version():
+    assert mod.unpack_version(10001) == (1, 1)
+    assert mod.unpack_version(240032) == (24, 32)
+    assert mod.unpack_version(60056) == (6, 56)
+    assert mod.unpack_version(490002) == (49, 2)
+    assert mod.unpack_version(11) == (0, 11)
+    assert mod.unpack_version(230000) == (23, 0)
+
+
+@mock.patch.object(mod.os, 'remove')
+@mock.patch.object(mod.os.path, 'exists')
+def test_drop_db(exists, remove):
+    db = mock.Mock()
+    db.connection.path = '/path/to/database'
+    exists.return_value = True
+    mod.drop_db(db)
+    db.close.assert_called_once_with()
+    db.reconnect.assert_called_once_with()
+    calls = [mock.call('.'.join([db.connection.path, ext]))
+             for ext in mod.SQLITE_EXTENSIONS]
+    exists.assert_has_calls(calls)
+    remove.assert_has_calls(calls)
+
+
+@mock.patch.object(mod.os, 'listdir', autospec=True)
+def test_get_mods_no_dupes(listdir):
     """ Listing modules does not return duplicates """
-    listdir.return_value = ['01_test.py', '01_test.pyc', '02_test.py']
+    listdir.return_value = ['01_01_test.py', '01_01_test.pyc', '01_02_test.py']
     mocked_pkg = mock.Mock()
     mocked_pkg.__path__ = ['foo']
     m = mod.get_mods(mocked_pkg)
-    assert sorted(list(m)) == ['01_test', '02_test']
+    assert m == [('01_01_test', 1, 1), ('01_02_test', 1, 2)]
 
 
-@mock.patch(MOD + '.os.listdir', autospec=True)
-def test_list_modules_ignores_non_migration_files(listdir):
+@mock.patch.object(mod.os, 'listdir', autospec=True)
+def test_get_mods_order(listdir):
+    """ Listing modules does not return duplicates """
+    listdir.return_value = ['01_02_test.py', '02_01_new.py', '01_03_test.py',
+                            '01_01_test.py']
+    mocked_pkg = mock.Mock()
+    mocked_pkg.__path__ = ['foo']
+    m = mod.get_mods(mocked_pkg)
+    assert m == [('01_01_test', 1, 1),
+                 ('01_02_test', 1, 2),
+                 ('01_03_test', 1, 3),
+                 ('02_01_new', 2, 1)]
+
+
+@mock.patch.object(mod.os, 'listdir', autospec=True)
+def test_get_mods_ignores_non_migration_files(listdir):
     """ Listing modules will not return modules aren't migrations """
-    listdir.return_value = ['__init__.py', 'foo.py', '01_test.py',
-                            '02_test.py']
+    listdir.return_value = ['__init__.py', 'foo.py', '01_01_test.py',
+                            '01_02_test.py']
     mocked_pkg = mock.Mock()
     mocked_pkg.__path__ = ['foo']
     m = mod.get_mods(mocked_pkg)
-    assert sorted(list(m)) == ['01_test', '02_test']
+    assert m == [('01_01_test', 1, 1), ('01_02_test', 1, 2)]
 
 
-@mock.patch(MOD + '.os.listdir', autospec=True)
-def test_list_modules_can_use_any_number_of_digits(listdir):
-    """ Migration numbering is not limited by number of digits """
-    listdir.return_value = ['00001_test.py', '00002_test.py']
-    mocked_pkg = mock.Mock()
-    mocked_pkg.__path__ = ['foo']
-    m = mod.get_mods(mocked_pkg)
-    assert list(m) == ['00001_test', '00002_test']
-
-
-def test_get_migrations_lists_migrations_to_run():
-    """ Given migration version, migratable modules are selected """
-    m = mod.get_new(['01_test', '02_test', '03_test'], 2)
-    assert list(m) == [('02_test', 2), ('03_test', 3)]
-
-
-def test_get_migration_list_correct_order():
+def test_get_new():
     """ Even if migrations are not in correct order, they are reordered """
-    m = mod.get_new(['03_test', '01_test', '02_test'], 2)
-    assert list(m) == [('02_test', 2), ('03_test', 3)]
+    mods = [('01_01_test', 1, 1),
+            ('01_02_test', 1, 2),
+            ('01_03_test', 1, 3),
+            ('02_01_test', 2, 1)]
+    m = mod.get_new(mods, 1, 2)
+    assert list(m) == [('01_02_test', 1, 2),
+                       ('01_03_test', 1, 3),
+                       ('02_01_test', 2, 1)]
 
 
 @mock.patch.object(mod.importlib, 'import_module')
-def test_load_migration(import_module):
+def test_load_mod(import_module):
     mocked_pkg = mock.Mock()
     mocked_pkg.__name__ = 'mypkg'
     mocked_mod = mock_module()
@@ -82,61 +106,74 @@ def test_load_migration(import_module):
     import_module.assert_called_once_with('mypkg.01_test', package='mypkg')
 
 
-def test_get_migration_version():
+@mock.patch.object(mod, 'unpack_version')
+def test_get_version(unpack_version):
     """ Returns migration version based on database table """
     db = mock.Mock()
-    ret = mod.get_version(db)
-    assert db.query.called
-    assert ret == db.result.version
+    assert mod.get_version(db) == unpack_version.return_value
+    db.query.assert_any_call(mod.GET_VERSION_SQL)
+    unpack_version.assert_called_once_with(db.result.user_version)
 
 
-def test_create_table_if_no_version_table():
+@mock.patch.object(mod, 'drop_db')
+def test_get_version_drop_db(drop_db):
     """ Version-tracking table is crated if it doesn't exist """
-    import sqlite3
     db = mock.Mock()
-    db.query.side_effect = [sqlite3.OperationalError('no such table'), None,
-                            None]
-    try:
-        ret = mod.get_version(db)
-    except Exception:
-        assert False, 'Expected not to raise'
-    assert ret == 0
-    db.query.assert_any_call(mod.MIGRATION_TABLE_SQL)
-    db.query.assert_any_call(mod.REPLACE_SQL, 0)
+    db.result.user_version = None
+    assert mod.get_version(db) == (0, 0)
+    drop_db.assert_called_once_with(db)
 
 
-def test_run_migration():
+@mock.patch.object(mod, 'pack_version')
+def test_set_version(pack_version):
+    db = mock.Mock()
+    pack_version.return_value = 20004
+    mod.set_version(db, 2, 4)
+    pack_version.assert_called_once_with(2, 4)
+    sql = mod.SET_VERSION_SQL.format(version=pack_version.return_value)
+    db.query.assert_called_once_with(sql)
+
+
+@mock.patch.object(mod, 'set_version')
+def test_run_migration(set_version):
     """ Running migration calls module's ``up()`` method """
     db = mock.Mock()
     db.transaction.return_value.__enter__ = lambda x: None
     db.transaction.return_value.__exit__ = lambda x, y, z, n: None
     m = mock.Mock()
-    mod.run_migration(1, db, m)
+    mod.run_migration(0, 1, db, m)
     m.up.assert_called_once_with(db, {})
-    db.query.assert_called_once_with(mod.REPLACE_SQL, 1)
+    set_version.assert_called_once_with(db, 0, 1)
 
 
-@mock.patch(MOD + '.logging')
-@mock.patch(MOD + '.get_version')
-@mock.patch(MOD + '.get_mods')
-@mock.patch(MOD + '.get_new')
-@mock.patch(MOD + '.load_mod')
-@mock.patch(MOD + '.run_migration')
+@mock.patch.object(mod, 'logging')
+@mock.patch.object(mod, 'set_version')
+@mock.patch.object(mod, 'get_version')
+@mock.patch.object(mod, 'get_mods')
+@mock.patch.object(mod, 'get_new')
+@mock.patch.object(mod, 'load_mod')
+@mock.patch.object(mod, 'run_migration')
 @mock.patch.object(mod.importlib, 'import_module')
 def test_migrate(import_module, run, load_mod, get_new, get_mods, get_version,
                  *ignored):
     mocked_pkg = mock.MagicMock()
-    mocked_pkg.__package__ = 'mypkg'
+    mocked_pkg.__name__ = 'mypkg.migrations.dbname'
     import_module.return_value = mocked_pkg
-    get_version.return_value = 2
-    get_mods.return_value = ['01_test', '02_test', '03_test']
-    get_new.return_value = [('03_test', 3)]
+    get_version.return_value = (1, 2)
+    get_mods.return_value = ['01_01_test',
+                             '01_02_test',
+                             '01_03_test',
+                             '02_01_new']
+    get_new.return_value = [('01_03_test', 1, 3), ('02_01_new', 2, 1)]
+    load_mod.return_value = 'loaded mod'
     db = mock.Mock()
     mod.migrate(db, 'mypkg', {})
     import_module.assert_called_once_with('mypkg')
     get_version.assert_called_once_with(db)
     get_mods.assert_called_once_with(mocked_pkg)
-    get_new.assert_called_once_with(get_mods.return_value, 3)
-    load_mod.assert_called_once_with('03_test', mocked_pkg)
-    run.assert_called_once_with(3, db, load_mod.return_value, {})
+    get_new.assert_called_once_with(get_mods.return_value, 1, 3)
+    load_mod.assert_has_calls([mock.call('01_03_test', mocked_pkg),
+                               mock.call('02_01_new', mocked_pkg)])
+    run.assert_has_calls([mock.call(1, 3, db, load_mod.return_value, {}),
+                          mock.call(2, 1, db, load_mod.return_value, {})])
     assert db.refresh_table_stats.called
