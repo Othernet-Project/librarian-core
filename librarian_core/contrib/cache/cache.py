@@ -16,11 +16,11 @@ class BaseCache(object):
     """Abstract class, meant to be subclassed by specific caching backends to
     implement their own `get` and `set` methods.
 
-    :param default_timeout:  timeout value to use if explicit `timeout` param
-                             is omitted or `None`. `0` means no timeout.
+    :param timeout: timeout value to use if explicit ``timeout`` param is
+                    omitted or ``None``. ``0`` means no timeout.
     """
-    def __init__(self, default_timeout=0, **kwargs):
-        self.default_timeout = default_timeout
+    def __init__(self, timeout=0, **kwargs):
+        self.default_timeout = timeout
 
     def get(self, key):
         raise NotImplementedError()
@@ -205,20 +205,19 @@ class MemcachedCache(BaseCache):
         self._new_prefix(prefix)
 
 
-def setup(backend, timeout, servers):
+def setup(backend, **kwargs):
     """Instantiate and return the requested cache backend.
 
     :param backend:  string: unique backend class identifier, possible values:
                      "in-memory", "memcached"
-    :param timeout:  default timeout in seconds
-    :param servers:  list / tuple of server addresses
+    :param kwargs:   backend specific keyword arguments
     """
     backends = {'in-memory': InMemoryCache,
+                'scored': ScoredInMemoryCache,
                 'memcached': MemcachedCache}
     try:
         backend_cls = backends[backend]
     except KeyError:
         return NoOpCache()  # caching will be disabled
     else:
-        return backend_cls(default_timeout=timeout,
-                           servers=servers)
+        return backend_cls(**kwargs)
