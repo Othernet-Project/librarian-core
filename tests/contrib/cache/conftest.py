@@ -11,3 +11,8 @@ def base_cache():
 @pytest.fixture
 def im_cache():
     return mod.InMemoryCache()
+
+
+@pytest.fixture
+def sim_cache():
+    return mod.ScoredInMemoryCache()

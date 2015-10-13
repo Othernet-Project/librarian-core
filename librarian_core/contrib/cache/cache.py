@@ -89,7 +89,7 @@ class InMemoryCache(BaseCache):
             (expires, data) = self._cache[key]
             if not self.has_expired(expires):
                 return data
-            self._cache.pop(key, None)  # delete expired data from cache
+            self.delete(key)  # delete expired data from cache
         except KeyError:
             return None
 
@@ -110,6 +110,47 @@ class InMemoryCache(BaseCache):
         for key in self._cache.keys():
             if key.startswith(prefix):
                 self.delete(key)
+
+
+class ScoredInMemoryCache(InMemoryCache):
+    """In-memory cache with a specified storage limit. Items are scored and
+    each access to them increments their score. When the number of items
+    exceeds the specified storage limit, the item with the lowest score is
+    deleted from the cache."""
+    def __init__(self, **kwargs):
+        self.limit = kwargs.pop('limit', None)
+        super(ScoredInMemoryCache, self).__init__(**kwargs)
+        self._scores = dict()
+
+    def get(self, key):
+        result = super(ScoredInMemoryCache, self).get(key)
+        if result:
+            # set takes care of initializing the score of any item, so it is
+            # assumed direct incrementation is safe
+            self._scores[key] += 1
+        return result
+
+    def set(self, key, value, timeout=None):
+        # check if there is enough space to store new item
+        if (self.limit and
+                len(self._cache) == self.limit and
+                key not in self._cache):
+            # cache already full, delete item with lowest score
+            lowest_scored_key = min(self._scores, key=self._scores.get)
+            self.delete(lowest_scored_key)
+
+        super(ScoredInMemoryCache, self).set(key, value, timeout=timeout)
+        # newly added item starts with score of 0, otherwise if item already
+        # had a score and only it's value got updated, keep the original score
+        self._scores.setdefault(key, 0)
+
+    def delete(self, key):
+        super(ScoredInMemoryCache, self).delete(key)
+        self._scores.pop(key, None)
+
+    def clear(self):
+        super(ScoredInMemoryCache, self).clear()
+        self._scores = dict()
 
 
 class MemcachedCache(BaseCache):

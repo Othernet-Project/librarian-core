@@ -92,6 +92,73 @@ class TestInMemoryCache(object):
         assert im_cache._cache == {'pre2_key1': 5}
 
 
+class TestScoredInMemoryCache(object):
+
+    @mock.patch.object(mod.ScoredInMemoryCache, 'has_expired')
+    def test_get_found(self, has_expired, sim_cache):
+        has_expired.return_value = False
+        sim_cache._cache['key'] = ('expires', 'data')
+        sim_cache._scores['key'] = 0
+        assert sim_cache.get('key') == 'data'
+        assert sim_cache._scores['key'] == 1
+        has_expired.assert_called_once_with('expires')
+
+    @mock.patch.object(mod.ScoredInMemoryCache, 'delete')
+    @mock.patch.object(mod.ScoredInMemoryCache, 'has_expired')
+    def test_get_found_expired(self, has_expired, delete, sim_cache):
+        has_expired.return_value = True
+        sim_cache._cache['key'] = ('expires', 'data')
+        assert sim_cache.get('key') is None
+        has_expired.assert_called_once_with('expires')
+        delete.assert_called_once_with('key')
+
+    @mock.patch.object(mod.ScoredInMemoryCache, 'has_expired')
+    def test_get_not_found(self, has_expired, sim_cache):
+        assert sim_cache.get('key') is None
+        assert not has_expired.called
+        assert 'key' not in sim_cache._scores
+
+    @mock.patch.object(mod.InMemoryCache, 'get_expiry')
+    def test_set_cache_full_new_score(self, get_expiry):
+        get_expiry.return_value = 'expires'
+        sim_cache = mod.ScoredInMemoryCache(limit=3)
+        sim_cache._cache['a'] = 'aa'
+        sim_cache._cache['b'] = 'bb'
+        sim_cache._cache['c'] = 'cc'
+        sim_cache._scores['a'] = 10
+        sim_cache._scores['b'] = 0
+        sim_cache._scores['c'] = 3
+        sim_cache.set('d', 'dd')
+        assert sim_cache._cache == {'a': 'aa',
+                                    'c': 'cc',
+                                    'd': ('expires', 'dd')}
+        assert sim_cache._scores == {'a': 10, 'c': 3, 'd': 0}
+
+    def test_set_cache_full_keep_score(self, sim_cache):
+        sim_cache._cache['a'] = 'aa'
+        sim_cache._scores['a'] = 10
+        sim_cache.set('a', 'newvalue')
+        assert sim_cache._scores == {'a': 10}
+
+    def test_clear(self, sim_cache):
+        sim_cache._cache['key'] = 'val'
+        sim_cache._scores['key'] = 10
+        sim_cache.clear()
+        assert sim_cache._cache == {}
+        assert sim_cache._scores == {}
+
+    def test_delete(self, sim_cache):
+        sim_cache._cache['key'] = 'test'
+        sim_cache._scores['key'] = 5
+        sim_cache.delete('key')
+        assert sim_cache._cache == {}
+        assert sim_cache._scores == {}
+        try:
+            sim_cache.delete('invalid')
+        except Exception as exc:
+            pytest.fail('Should not raise: {0}'.format(exc))
+
+
 class TestMemcachedCache(object):
 
     def test_no_client_lib(self):
