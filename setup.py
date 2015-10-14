@@ -27,6 +27,7 @@ setup(
         'bottle-utils-html',
         'bottle-utils-i18n',
         'bottle-utils-lazy',
+        'chainable-validators',
         'cssmin',
         'gevent',
         'Mako',
