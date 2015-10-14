@@ -11,6 +11,10 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 import time
 import uuid
 
+import validators as v
+
+from .utils import strip_protocol
+
 
 class BaseCache(object):
     """Abstract class, meant to be subclassed by specific caching backends to
@@ -19,6 +23,9 @@ class BaseCache(object):
     :param timeout: timeout value to use if explicit ``timeout`` param is
                     omitted or ``None``. ``0`` means no timeout.
     """
+    class Config:
+        timeout = v.istype(int)
+
     def __init__(self, timeout=0, **kwargs):
         self.default_timeout = timeout
 
@@ -56,9 +63,30 @@ class BaseCache(object):
     def has_expired(self, expires):
         return expires > 0 and expires < time.time()
 
+    @classmethod
+    def get_config_params(cls):
+        return dict((attr, getattr(cls.Config, attr).__func__)
+                    for attr in dir(cls.Config) if not attr.startswith('_'))
+
+    @classmethod
+    def children(cls, source=None):
+        """Recursively collect all subclasses of ``cls``, not just direct
+        descendants.
+
+        :param source:  On subsequent recursive calls, source will point to a
+                        child class that needs to be inspected.
+        """
+        source = source or cls
+        result = source.__subclasses__()
+        for child in result:
+            result.extend(cls.children(source=child))
+        return result
+
 
 class NoOpCache(BaseCache):
     """Dummy cache which does not perform anything"""
+    identifier = 'noop'
+
     def get(self, key):
         return
 
@@ -80,6 +108,8 @@ class NoOpCache(BaseCache):
 
 class InMemoryCache(BaseCache):
     """Simple in-memory cache backend"""
+    identifier = 'in-memory'
+
     def __init__(self, **kwargs):
         super(InMemoryCache, self).__init__(**kwargs)
         self._cache = dict()
@@ -116,9 +146,14 @@ class ScoredInMemoryCache(InMemoryCache):
     """In-memory cache with a specified storage limit. Items are scored and
     each access to them increments their score. When the number of items
     exceeds the specified storage limit, the item with the lowest score is
-    deleted from the cache."""
-    def __init__(self, **kwargs):
-        self.limit = kwargs.pop('limit', None)
+    deleted from the cache.
+    """
+    identifier = 'scored-in-memory'
+
+    class Config(InMemoryCache.Config):
+        limit = v.istype(int)
+
+    def __init__(self, limit, **kwargs):
         super(ScoredInMemoryCache, self).__init__(**kwargs)
         self._scores = dict()
 
@@ -156,12 +191,17 @@ class ScoredInMemoryCache(InMemoryCache):
 class MemcachedCache(BaseCache):
     """Memcached based cache backend
 
-    :param servers:  list / tuple containing memcache server address(es)
+    :param servers:  list of memcache server address(es)
     """
+    identifier = 'memcached'
     prefixes_key = '__prefix__'
+
+    class Config(BaseCache.Config):
+        servers = v.listof(v.url)
 
     def __init__(self, servers, **kwargs):
         super(MemcachedCache, self).__init__(**kwargs)
+        servers = map(strip_protocol, servers)
         try:
             import pylibmc
         except ImportError:
@@ -203,21 +243,3 @@ class MemcachedCache(BaseCache):
 
     def invalidate(self, prefix):
         self._new_prefix(prefix)
-
-
-def setup(backend, **kwargs):
-    """Instantiate and return the requested cache backend.
-
-    :param backend:  string: unique backend class identifier, possible values:
-                     "in-memory", "memcached"
-    :param kwargs:   backend specific keyword arguments
-    """
-    backends = {'in-memory': InMemoryCache,
-                'scored': ScoredInMemoryCache,
-                'memcached': MemcachedCache}
-    try:
-        backend_cls = backends[backend]
-    except KeyError:
-        return NoOpCache()  # caching will be disabled
-    else:
-        return backend_cls(**kwargs)

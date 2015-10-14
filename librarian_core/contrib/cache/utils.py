@@ -25,3 +25,7 @@ def generate_key(*args, **kwargs):
         md5.update(to_str(key) + to_str(value))
 
     return md5.hexdigest()
+
+
+def strip_protocol(url, sep='://'):
+    return url[url.find(sep) + len(sep):] if sep in url else url
