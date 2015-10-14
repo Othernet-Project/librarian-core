@@ -2,6 +2,7 @@
 *.sw[op]
 /.tox
 /*.egg-info
+/.cache
 /dist
 /build
 /docs/build
