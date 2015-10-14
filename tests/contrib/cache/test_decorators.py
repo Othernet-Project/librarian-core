@@ -1,12 +1,12 @@
 import mock
 
-from librarian_core.contrib.cache import cache
+from librarian_core.contrib.cache import backends
 from librarian_core.contrib.cache import decorators as mod
 
 
 @mock.patch.object(mod, 'request')
 def test_cached_no_backend(request):
-    request.app.supervisor.exts.cache = cache.NoOpCache()
+    request.app.supervisor.exts.cache = backends.NoOpCache()
     orig_func = mock.Mock(__name__='orig_func')
     orig_func.return_value = 'data'
     cached_func = mod.cached()(orig_func)
@@ -16,9 +16,9 @@ def test_cached_no_backend(request):
     orig_func.assert_called_once_with('test', a=3)
 
 
-@mock.patch.object(cache.BaseCache, 'set')
-@mock.patch.object(cache.BaseCache, 'get')
-@mock.patch.object(cache.BaseCache, 'parse_prefix')
+@mock.patch.object(backends.BaseCache, 'set')
+@mock.patch.object(backends.BaseCache, 'get')
+@mock.patch.object(backends.BaseCache, 'parse_prefix')
 @mock.patch.object(mod, 'generate_key')
 @mock.patch.object(mod, 'request')
 def test_cached_found(request, generate_key, parse_prefix, get, setfunc,
@@ -37,9 +37,9 @@ def test_cached_found(request, generate_key, parse_prefix, get, setfunc,
     assert not setfunc.called
 
 
-@mock.patch.object(cache.BaseCache, 'set')
-@mock.patch.object(cache.BaseCache, 'get')
-@mock.patch.object(cache.BaseCache, 'parse_prefix')
+@mock.patch.object(backends.BaseCache, 'set')
+@mock.patch.object(backends.BaseCache, 'get')
+@mock.patch.object(backends.BaseCache, 'parse_prefix')
 @mock.patch.object(mod, 'generate_key')
 @mock.patch.object(mod, 'request')
 def test_cached_not_found(request, generate_key, parse_prefix, get, setfunc,
@@ -61,9 +61,9 @@ def test_cached_not_found(request, generate_key, parse_prefix, get, setfunc,
                                     timeout=base_cache.default_timeout)
 
 
-@mock.patch.object(cache.BaseCache, 'set')
-@mock.patch.object(cache.BaseCache, 'get')
-@mock.patch.object(cache.BaseCache, 'parse_prefix')
+@mock.patch.object(backends.BaseCache, 'set')
+@mock.patch.object(backends.BaseCache, 'get')
+@mock.patch.object(backends.BaseCache, 'parse_prefix')
 @mock.patch.object(mod, 'generate_key')
 @mock.patch.object(mod, 'request')
 def test_cached_not_found_no_timeout(request, generate_key, parse_prefix, get,
@@ -80,9 +80,9 @@ def test_cached_not_found_no_timeout(request, generate_key, parse_prefix, get,
     setfunc.assert_called_once_with('md5_key', 'fresh', timeout=0)
 
 
-@mock.patch.object(cache.BaseCache, 'set')
-@mock.patch.object(cache.BaseCache, 'get')
-@mock.patch.object(cache.BaseCache, 'parse_prefix')
+@mock.patch.object(backends.BaseCache, 'set')
+@mock.patch.object(backends.BaseCache, 'get')
+@mock.patch.object(backends.BaseCache, 'parse_prefix')
 @mock.patch.object(mod, 'generate_key')
 @mock.patch.object(mod, 'request')
 def test_cached_not_found_custom_timeout(request, generate_key, parse_prefix,
@@ -99,9 +99,9 @@ def test_cached_not_found_custom_timeout(request, generate_key, parse_prefix,
     setfunc.assert_called_once_with('md5_key', 'fresh', timeout=180)
 
 
-@mock.patch.object(cache.BaseCache, 'set')
-@mock.patch.object(cache.BaseCache, 'get')
-@mock.patch.object(cache.BaseCache, 'parse_prefix')
+@mock.patch.object(backends.BaseCache, 'set')
+@mock.patch.object(backends.BaseCache, 'get')
+@mock.patch.object(backends.BaseCache, 'parse_prefix')
 @mock.patch.object(mod, 'generate_key')
 @mock.patch.object(mod, 'request')
 def test_cached_not_found_custom_prefix(request, generate_key, parse_prefix,

@@ -8,6 +8,7 @@ This software is free software licensed under the terms of GPLv3. See COPYING
 file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
+import sys
 import time
 import uuid
 
@@ -154,11 +155,11 @@ class ScoredInMemoryCache(InMemoryCache):
     identifier = 'scored-in-memory'
 
     class Config(InMemoryCache.Config):
-        limit = v.istype(int)
+        limit = v.istype(float)
 
     def __init__(self, limit, **kwargs):
         super(ScoredInMemoryCache, self).__init__(**kwargs)
-        self.limit = limit
+        self.limit = int(limit)
         self._scores = dict()
 
     def get(self, key):
@@ -169,14 +170,22 @@ class ScoredInMemoryCache(InMemoryCache):
             self._scores[key] += 1
         return result
 
-    def set(self, key, value, timeout=None):
-        # check if there is enough space to store new item
-        if (self.limit and
-                len(self._cache) == self.limit and
-                key not in self._cache):
-            # cache already full, delete item with lowest score
+    def has_reached_limit(self):
+        return self.limit and len(self._cache) == self.limit
+
+    def perform_cleanup(self):
+        # until cache size is not below the specified limit, delete the least
+        # accessed items one by one
+        while self._cache and self.has_reached_limit():
             lowest_scored_key = min(self._scores, key=self._scores.get)
             self.delete(lowest_scored_key)
+
+    def set(self, key, value, timeout=None):
+        if key not in self._cache:
+            # perform cleanup only if we're about to add a new item. marginal
+            # spikes over the limit are possible, e.g. if an item is updated,
+            # but it's new size exceeds it's previous one
+            self.perform_cleanup()
 
         super(ScoredInMemoryCache, self).set(key, value, timeout=timeout)
         # newly added item starts with score of 0, otherwise if item already
@@ -190,6 +199,36 @@ class ScoredInMemoryCache(InMemoryCache):
     def clear(self):
         super(ScoredInMemoryCache, self).clear()
         self._scores = dict()
+
+
+class SizeScoredInMemoryCache(ScoredInMemoryCache):
+    """Scored in memory cache, but limit is determined by the size of data
+    being stored, not by the number of items.
+    """
+    identifier = 'size-scored-in-memory'
+
+    def __init__(self, **kwargs):
+        super(SizeScoredInMemoryCache, self).__init__(**kwargs)
+        self._sizes = dict()
+        self._cache_size = 0
+
+    def has_reached_limit(self):
+        return self.limit and self._cache_size >= self.limit
+
+    def set(self, key, value, timeout=None):
+        super(SizeScoredInMemoryCache, self).set(key, value, timeout=timeout)
+        item_size = sys.getsizeof(value)
+        self._sizes[key] = item_size
+        self._cache_size += item_size
+
+    def delete(self, key):
+        super(SizeScoredInMemoryCache, self).delete(key)
+        size = self._sizes.pop(key, 0)
+        self._cache_size -= size
+
+    def clear(self):
+        super(SizeScoredInMemoryCache, self).clear()
+        self._sizes = dict()
 
 
 class MemcachedCache(BaseCache):

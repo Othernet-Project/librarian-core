@@ -10,7 +10,7 @@ def setup(backend, config):
 
     :param backend:  string: unique backend class identifier, possible values:
                      "in-memory", "memcached"
-    :param config:   ``confloader.ConfDict`` instance
+    :param config:   dict containing config params
     """
     backends = dict((cls.identifier, cls) for cls in BaseCache.children())
     try:

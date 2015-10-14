@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+import sys
 import time
 
 import mock
 import pytest
 
-from librarian_core.contrib.cache import cache as mod
+from librarian_core.contrib.cache import backends as mod
 
 
 @pytest.fixture(params=['pylibmc', 'memcache'])
@@ -159,6 +160,29 @@ class TestScoredInMemoryCache(object):
             pytest.fail('Should not raise: {0}'.format(exc))
 
 
+class TestSizeScoredInMemoryCache(object):
+
+    def test_set(self, ssim_cache):
+        assert len(ssim_cache._sizes) == 0
+        assert ssim_cache._cache_size == 0
+        ssim_cache.set('a', 'simple')
+        ssim_cache.set('b', 'complex')
+        simple_size = sys.getsizeof('simple')
+        complex_size = sys.getsizeof('complex')
+        assert ssim_cache._sizes['a'] == simple_size
+        assert ssim_cache._sizes['b'] == complex_size
+        assert ssim_cache._cache_size == simple_size + complex_size
+
+    def test_delete(self, ssim_cache):
+        ssim_cache.set('a', 'simple')
+        ssim_cache.set('b', 'complex')
+        ssim_cache.delete('b')
+        simple_size = sys.getsizeof('simple')
+        assert ssim_cache._cache_size == simple_size
+        assert ssim_cache._sizes['a'] == simple_size
+        assert 'b' not in ssim_cache._sizes
+
+
 class TestMemcachedCache(object):
 
     def test_no_client_lib(self):
@@ -208,24 +232,3 @@ class TestMemcachedCache(object):
     def test_invalidate(self, _new_prefix, mc_cache):
         mc_cache.invalidate('test')
         _new_prefix.assert_called_once_with('test')
-
-
-@mock.patch.object(mod, 'MemcachedCache')
-@mock.patch.object(mod, 'InMemoryCache')
-def test_setup(im_cache_cls, mc_cache_cls):
-    im_cache = mock.Mock()
-    im_cache_cls.return_value = im_cache
-    cache = mod.setup('in-memory', 300, ['server'])
-    im_cache_cls.assert_called_once_with(default_timeout=300,
-                                         servers=['server'])
-    assert cache is im_cache
-
-    mc_cache = mock.Mock()
-    mc_cache_cls.return_value = mc_cache
-    cache = mod.setup('memcached', 400, ['server2'])
-    mc_cache_cls.assert_called_once_with(default_timeout=400,
-                                         servers=['server2'])
-    assert cache is mc_cache
-
-    no_cache = mod.setup('invalid', 100, ['server3'])
-    assert isinstance(no_cache, mod.NoOpCache)

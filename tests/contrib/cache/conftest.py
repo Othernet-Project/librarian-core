@@ -1,6 +1,6 @@
 import pytest
 
-from librarian_core.contrib.cache import cache as mod
+from librarian_core.contrib.cache import backends as mod
 
 
 @pytest.fixture
@@ -15,4 +15,9 @@ def im_cache():
 
 @pytest.fixture
 def sim_cache():
-    return mod.ScoredInMemoryCache()
+    return mod.ScoredInMemoryCache(limit=0)
+
+
+@pytest.fixture
+def ssim_cache():
+    return mod.SizeScoredInMemoryCache(limit=0)
