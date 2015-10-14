@@ -158,6 +158,7 @@ class ScoredInMemoryCache(InMemoryCache):
 
     def __init__(self, limit, **kwargs):
         super(ScoredInMemoryCache, self).__init__(**kwargs)
+        self.limit = limit
         self._scores = dict()
 
     def get(self, key):
