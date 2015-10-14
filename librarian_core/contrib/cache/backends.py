@@ -229,6 +229,7 @@ class SizeScoredInMemoryCache(ScoredInMemoryCache):
     def clear(self):
         super(SizeScoredInMemoryCache, self).clear()
         self._sizes = dict()
+        self._cache_size = 0
 
 
 class MemcachedCache(BaseCache):
