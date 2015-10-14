@@ -65,6 +65,9 @@ class BaseCache(object):
 
     @classmethod
     def get_config_params(cls):
+        """Return a dictionary containing the contents of the ``Config`` class,
+        specifically pairs of parameter names and validator functions.
+        """
         return dict((attr, getattr(cls.Config, attr).__func__)
                     for attr in dir(cls.Config) if not attr.startswith('_'))
 
