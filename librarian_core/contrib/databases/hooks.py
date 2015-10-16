@@ -1,5 +1,5 @@
 from .commands import dump_tables
-from .utils import close_databases, init_databases
+from .helpers import close_databases, init_databases
 
 
 EXPORTS = {

@@ -16,6 +16,8 @@ import functools
 from bottle import request, response
 from bottle_utils.common import basestring
 
+from ..databases.utils import utcnow
+
 
 class SessionError(Exception):
     """ Exception raised when there is an error with sessions """
@@ -90,7 +92,7 @@ class Session(object):
         return self.save()
 
     def expire(self):
-        if self.expires >= datetime.datetime.utcnow():
+        if self.expires >= utcnow():
             return self
         self.delete()
         raise SessionExpired(self.id)
@@ -102,7 +104,7 @@ class Session(object):
         return self
 
     def set_cookie(self, name, secret):
-        max_age = (self.expires - datetime.datetime.now()).seconds
+        max_age = (self.expires - utcnow()).seconds
         response.set_cookie(name, self.id, path='/', secret=secret,
                             max_age=max_age)
 
@@ -242,4 +244,4 @@ class Session(object):
     @staticmethod
     def get_expiry():
         life = request.app.config['session.lifetime']
-        return datetime.datetime.utcnow() + datetime.timedelta(life)
+        return utcnow() + datetime.timedelta(life)
