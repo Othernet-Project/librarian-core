@@ -25,6 +25,7 @@ from pytz import utc
 
 
 SLASH = re.compile(r'\\')
+SQLITE_DATE_TYPES = ('date', 'datetime', 'timestamp')
 
 
 def from_utc_timestamp(timestamp):
@@ -41,8 +42,9 @@ def to_utc_timestamp(dt):
     return calendar.timegm(dt.timetuple())
 
 
-sqlite3.register_converter('timestamp', from_utc_timestamp)
 sqlite3.register_adapter(datetime.datetime, to_utc_timestamp)
+for date_type in SQLITE_DATE_TYPES:
+    sqlite3.register_converter(date_type, from_utc_timestamp)
 
 
 class Row(sqlite3.Row):
