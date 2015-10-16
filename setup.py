@@ -32,6 +32,7 @@ setup(
         'gevent',
         'Mako',
         'python-dateutil',
+        'pytz',
         'sqlize',
         'webassets',
     ],
