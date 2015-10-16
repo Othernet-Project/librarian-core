@@ -191,7 +191,8 @@ class Supervisor:
         self._enter_background_loop()
 
     def halt(self):
-        logging.info('Stopping the application')
+        logging.info('Stopping the application.')
         self.server.stop(5)
-        logging.info('Running shutdown hooks')
+        logging.info('Running shutdown hooks.')
         self.events.publish(self.SHUTDOWN, self)
+        logging.info('Clean shutdown.')

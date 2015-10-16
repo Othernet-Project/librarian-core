@@ -24,5 +24,6 @@ def on_interrupt(handler):
         ret = handler()
         sys.exit(ret)
 
+    signal.signal(signal.SIGINT, wrapper)
     signal.signal(signal.SIGTERM, wrapper)
     signal.signal(signal.SIGSEGV, wrapper)
