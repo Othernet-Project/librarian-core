@@ -10,23 +10,39 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 
 from __future__ import print_function
 
+import calendar
+import contextlib
+import datetime
+import logging
 import re
 import sqlite3
-import logging
-from contextlib import contextmanager
-
-import dateutil.parser
 
 from bottle_utils.common import basestring
 from bottle_utils.lazy import CachingLazy
 from sqlize import (From, Where, Group, Order, Limit, Select, Update, Delete,
                     Insert, Replace, sqlin, sqlarray)
+from pytz import utc
 
 
 SLASH = re.compile(r'\\')
 
 
-sqlite3.register_converter('timestamp', dateutil.parser.parse)
+def from_utc_timestamp(timestamp):
+    """Converts the passed-in unix UTC timestamp into a datetime object."""
+    dt = datetime.datetime.utcfromtimestamp(float(timestamp))
+    return dt.replace(tzinfo=utc)
+
+
+def to_utc_timestamp(dt):
+    """Converts the passed-in datetime object into a unix UTC timestamp."""
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+        msg = "Naive datetime object passed. It is assumed that it's in UTC."
+        logging.warning(msg)
+    return calendar.timegm(dt.timetuple())
+
+
+sqlite3.register_converter('timestamp', from_utc_timestamp)
+sqlite3.register_adapter(datetime.datetime, to_utc_timestamp)
 
 
 class Row(sqlite3.Row):
@@ -181,7 +197,7 @@ class Database(object):
     def result(self):
         return self.cursor.fetchone()
 
-    @contextmanager
+    @contextlib.contextmanager
     def transaction(self, silent=False):
         self.execute('BEGIN;')
         try:
