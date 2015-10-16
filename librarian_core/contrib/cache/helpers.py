@@ -12,13 +12,13 @@ def setup(backend, config):
                      "in-memory", "memcached"
     :param config:   dict containing config params
     """
+    options = dict()
     backends = dict((cls.identifier, cls) for cls in BaseCache.children())
     try:
         backend_cls = backends[backend]
     except KeyError:
         backend_cls = backends['noop']
     else:
-        options = dict()
         for name, validator in backend_cls.get_config_params().items():
             key = 'cache.{0}'.format(name)
             try:
