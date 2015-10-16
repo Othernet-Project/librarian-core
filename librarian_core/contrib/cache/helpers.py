@@ -35,4 +35,4 @@ def setup(backend, config):
                            "{2}".format(backend, key, error))
                     raise CacheConfigError(msg)
 
-        return backend_cls(**options)
+    return backend_cls(**options)
