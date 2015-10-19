@@ -1,11 +1,12 @@
 import logging.config
+import sys
 
 
 def configure(supervisor):
     logging.config.dictConfig({
         'version': 1,
         'root': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console'],
             'level': logging.DEBUG,
         },
         'handlers': {
@@ -16,6 +17,11 @@ def configure(supervisor):
                 'maxBytes': supervisor.config['logging.size'],
                 'backupCount': supervisor.config['logging.backups'],
             },
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'INFO',
+                'stream': sys.stdout
+            }
         },
         'formatters': {
             'default': {
