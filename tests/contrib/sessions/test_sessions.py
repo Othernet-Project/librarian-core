@@ -6,6 +6,18 @@ import pytest
 from librarian_core.contrib.sessions import sessions as mod
 
 
+def test_modifies():
+    instance = mock.Mock()
+    instance.modified = False
+    fn = mock.MagicMock()
+    fn.__name__ = 'some_fn'
+    fn.return_value = 'test'
+    decorated = mod.modifies(fn)
+    assert instance.modified is False
+    assert decorated(instance) == 'test'
+    assert instance.modified is True
+
+
 @mock.patch.object(mod.Session, '_load')
 def test___init__(_load):
     data = 'data'

@@ -34,7 +34,7 @@ class SessionExpired(SessionError):
     pass
 
 
-def modifier(func):
+def modifies(func):
     """Decorator for setting the `modified` flag for operations that modify
     the state of the session object."""
     @functools.wraps(func)
@@ -158,7 +158,7 @@ class Session(object):
         """
         return key in self.data
 
-    @modifier
+    @modifies
     def __delitem__(self, key):
         """Delete an item from the session dictionary.
 
@@ -174,7 +174,7 @@ class Session(object):
         """
         return self.data[key]
 
-    @modifier
+    @modifies
     def __setitem__(self, key, value):
         """Set a key-value association.
 
