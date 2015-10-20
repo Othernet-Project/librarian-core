@@ -11,7 +11,8 @@ from ...utils import utcnow
 from .base import BaseUser
 from .groups import Group
 from .helpers import identify_database
-from .options import Options, DateTimeDecoder, DateTimeEncoder
+from .options import Options
+from .serializers import DateTimeDecoder, DateTimeEncoder
 from .utils import from_csv, to_csv, row_to_dict, generate_random_key
 
 
