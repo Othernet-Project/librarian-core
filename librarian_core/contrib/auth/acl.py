@@ -1,9 +1,4 @@
-
-
-def is_string(obj):
-    if 'basestring' not in globals():
-        basestring = str
-    return isinstance(obj, basestring)
+from ...utils import is_string
 
 
 class BasePermission(object):
