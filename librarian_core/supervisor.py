@@ -1,6 +1,5 @@
 import logging
 import os
-import pkgutil
 import sys
 
 from bottle import Bottle
@@ -41,6 +40,18 @@ class Supervisor:
         BACKGROUND,
         SHUTDOWN,
         IMMEDIATE_SHUTDOWN,
+    )
+    CORE_COMPONENTS = (
+        'system',
+        'commands',
+        'databases',
+        'sessions',
+        'auth',
+        'i18n',
+        'cache',
+        'assets',
+        'tasks',
+        'templates',
     )
 
     EarlyExit = EarlyExit
@@ -132,10 +143,8 @@ class Supervisor:
 
     def _get_core_components(self):
         """Return list of import paths for all found core components."""
-        core_root = os.path.dirname(os.path.abspath(__file__))
-        contrib_root = os.path.join(core_root, 'contrib')
         return ['.'.join([__package__, 'contrib', name])
-                for (_, name, _) in pkgutil.iter_modules([contrib_root])]
+                for name in self.CORE_COMPONENTS]
 
     def _install_component_member(self, member):
         handler = self.COMPONENT_META[member['type']]['handler']
