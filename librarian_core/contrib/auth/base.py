@@ -82,7 +82,7 @@ class BaseUser(object):
                             "directly.".format(BaseUser.__name__))
         self.groups = groups or []
 
-    def has_permission(self, permission_class):
+    def has_permission(self, permission_class, *args, **kwargs):
         if is_string(permission_class):
             permission_class = BasePermission.cast(permission_class)
 
@@ -91,6 +91,6 @@ class BaseUser(object):
                 return True
 
             if group.contains_permission(permission_class):
-                return permission_class().is_granted()
+                return permission_class(*args, **kwargs).is_granted()
 
         return False
