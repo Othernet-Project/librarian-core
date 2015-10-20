@@ -25,6 +25,7 @@ setup(
         'cssmin',
         'gevent',
         'Mako',
+        'pbkdf2',
         'python-dateutil',
         'pytz',
         'sqlize',
