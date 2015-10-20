@@ -42,6 +42,7 @@ class Supervisor:
         IMMEDIATE_SHUTDOWN,
     )
     CORE_COMPONENTS = (
+        'assets',
         'system',
         'commands',
         'databases',
@@ -49,7 +50,6 @@ class Supervisor:
         'auth',
         'i18n',
         'cache',
-        'assets',
         'tasks',
         'templates',
     )
