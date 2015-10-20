@@ -14,8 +14,9 @@ def test_modifies():
     fn.return_value = 'test'
     decorated = mod.modifies(fn)
     assert instance.modified is False
-    assert decorated(instance) == 'test'
+    assert decorated(instance, 1, 2) == 'test'
     assert instance.modified is True
+    fn.assert_called_once_with(instance, 1, 2)
 
 
 @mock.patch.object(mod.Session, '_load')
