@@ -17,8 +17,22 @@ class BasePermission(object):
         return True
 
     @classmethod
+    def subclasses(cls, source=None):
+        """Recursively collect all subclasses of ``cls``, not just direct
+        descendants.
+
+        :param source:  On subsequent recursive calls, source will point to a
+                        child class that needs to be inspected.
+        """
+        source = source or cls
+        result = source.__subclasses__()
+        for child in result:
+            result.extend(cls.children(source=child))
+        return result
+
+    @classmethod
     def cast(cls, name):
-        for subclass in cls.__subclasses__():
+        for subclass in cls.subclasses():
             if subclass.name == name:
                 return subclass
 
