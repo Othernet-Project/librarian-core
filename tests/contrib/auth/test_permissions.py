@@ -37,3 +37,24 @@ class TestBaseDynamicPermission(object):
         json.load.assert_called_once_with(db.result.data,
                                           cls=mod.DateTimeDecoder)
         assert bdp.data == json.load.return_value
+
+    @mock.patch.object(mod.BaseDynamicPermission, '_load')
+    @mock.patch.object(mod, 'json')
+    def test_save(self, json, _load, dyn_perm_cls):
+        db = mock.Mock()
+        bdp = dyn_perm_cls('id', db=db)
+        bdp.data = {'test': 1}
+        bdp.save()
+
+        db.Replace.assert_called_once_with(
+            'permissions',
+            name=':name',
+            identifier=':identifier',
+            data=':data',
+            where='name = :name AND identifier = :identifier'
+        )
+        json.dumps.assert_called_once_with(bdp.data, cls=mod.DateTimeEncoder)
+        db.query.assert_called_once_with(db.Replace.return_value,
+                                         name=bdp.name,
+                                         identifier=bdp.identifier,
+                                         data=json.dumps.return_value)
