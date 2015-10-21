@@ -164,6 +164,7 @@ class TestBaseUser(object):
         perm_instance.is_granted.return_value = True
 
         assert user.has_permission(perm_cls, 'some_param', 1, a=4) is True
+        get_permission_kwargs.assert_called_once_with()
         perm_cls.assert_called_once_with(**get_permission_kwargs.return_value)
         perm_instance.is_granted.assert_called_once_with('some_param', 1, a=4)
 
