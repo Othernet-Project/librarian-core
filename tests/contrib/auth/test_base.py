@@ -18,6 +18,13 @@ def permission():
     return CustomPermission()
 
 
+@pytest.fixture
+def user_cls():
+    class User(mod.BaseUser):
+        pass
+    return User
+
+
 class TestBasePermission(object):
 
     def test_unnamed_permission(self, bad_permission_cls):
@@ -108,3 +115,59 @@ class TestBaseGroup(object):
         perm2.name = 'perm2'
         group.permission_classes = [perm1, perm2]
         assert group.permissions == ['perm1', 'perm2']
+
+
+class TestBaseUser(object):
+
+    def test_abstract_user_guard(self):
+        with pytest.raises(TypeError):
+            mod.BaseUser()
+
+    def test___init__(self):
+        class User(mod.BaseUser):
+            pass
+
+        assert User(None).groups == []
+        assert User([1, 2]).groups == [1, 2]
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test_has_permission_from_string(self, BasePermission, user_cls):
+        user = user_cls([])
+        user.has_permission('test')
+        BasePermission.cast.assert_called_once_with('test')
+
+    def test_has_permission_superuser(self, user_cls):
+        group1 = mock.Mock()
+        group1.contains_permission.return_value = False
+        group1.has_superpowers = False
+        group2 = mock.Mock()
+        group2.contains_permission.return_value = False
+        group2.has_superpowers = True
+        user = user_cls([group1, group2])
+        perm_cls = mock.Mock()
+        assert user.has_permission(perm_cls) is True
+
+    @mock.patch.object(mod.BaseUser, 'get_permission_kwargs')
+    def test_has_permission_granted(self, get_permission_kwargs, user_cls):
+        get_permission_kwargs.return_value = dict(identifier='username',
+                                                  db=mock.Mock())
+        group1 = mock.Mock()
+        group1.contains_permission.return_value = False
+        group1.has_superpowers = False
+        group2 = mock.Mock()
+        group2.contains_permission.return_value = True
+        group2.has_superpowers = False
+        user = user_cls([group1, group2])
+
+        perm_cls = mock.Mock()
+        perm_instance = perm_cls.return_value
+        perm_instance.is_granted.return_value = True
+
+        assert user.has_permission(perm_cls, 'some_param', 1, a=4) is True
+        perm_cls.assert_called_once_with(**get_permission_kwargs.return_value)
+        perm_instance.is_granted.assert_called_once_with('some_param', 1, a=4)
+
+    def test_has_permission_no_groups(self, user_cls):
+        user = user_cls([])
+        perm_cls = mock.Mock()
+        assert user.has_permission(perm_cls) is False
