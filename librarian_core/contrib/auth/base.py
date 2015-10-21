@@ -27,7 +27,7 @@ class BasePermission(object):
         source = source or cls
         result = source.__subclasses__()
         for child in result:
-            result.extend(cls.children(source=child))
+            result.extend(cls.subclasses(source=child))
         return result
 
     @classmethod
