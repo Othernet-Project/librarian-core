@@ -52,6 +52,9 @@ class User(BaseUser):
     def is_superuser(self):
         return any([group.has_superpowers for group in self.groups])
 
+    def get_permission_kwargs(self):
+        return dict(identifier=self.username, db=self.db)
+
     @authenticated_only
     def logout(self):
         request.session.delete().reset()

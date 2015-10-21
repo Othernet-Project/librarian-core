@@ -4,12 +4,12 @@ from ...utils import is_string
 class BasePermission(object):
     name = None  # subclasses should provide a unique identifier
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         if self.name is None:
             raise ValueError("Permisson class has no `name` attribute "
                              "specified.")
 
-    def is_granted(self):
+    def is_granted(self, *args, **kwargs):
         """The default behavior is that solely a permission object's presence
         in a group grants access. However, if special conditions need to be
         checked, subclasses may override this method and perform custom
@@ -82,6 +82,10 @@ class BaseUser(object):
                             "directly.".format(BaseUser.__name__))
         self.groups = groups or []
 
+    def get_permission_kwargs(self):
+        """Returns the keyword arguments for instantiating the permission."""
+        return dict()
+
     def has_permission(self, permission_class, *args, **kwargs):
         if is_string(permission_class):
             permission_class = BasePermission.cast(permission_class)
@@ -91,6 +95,7 @@ class BaseUser(object):
                 return True
 
             if group.contains_permission(permission_class):
-                return permission_class(*args, **kwargs).is_granted()
+                permission = permission_class(**self.get_permission_kwargs())
+                return permission.is_granted(*args, **kwargs)
 
         return False
