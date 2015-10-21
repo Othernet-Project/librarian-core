@@ -51,3 +51,60 @@ class TestBasePermission(object):
     def test_cast_not_found(self):
         with pytest.raises(ValueError):
             mod.BasePermission.cast('never_heard_of')
+
+
+class TestBaseGroup(object):
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test___init__(self, BasePermission):
+        group = mod.BaseGroup('name',
+                              permissions=('this', 'that'),
+                              has_superpowers=True)
+        BasePermission.cast.assert_has_calls([mock.call('this'),
+                                              mock.call('that')])
+        assert group.has_superpowers is True
+        assert group.name == 'name'
+        assert group.permission_classes == [BasePermission.cast.return_value,
+                                            BasePermission.cast.return_value]
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test_contains_permission(self, BasePermission):
+        group = mod.BaseGroup('name')
+        perm1 = mock.Mock()
+        perm2 = mock.Mock()
+        perm3 = mock.Mock()
+        group.permission_classes = [perm1, perm2]
+        assert group.contains_permission(perm1) is True
+        assert group.contains_permission(perm2) is True
+        assert group.contains_permission(perm3) is False
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test_add_permission(self, BasePermission):
+        group = mod.BaseGroup('name')
+        assert group.permission_classes == []
+        perm = mock.Mock()
+        group.add_permission(perm)
+        assert group.permission_classes == [perm]
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test_remove_permission(self, BasePermission):
+        group = mod.BaseGroup('name')
+        perm1 = mock.Mock()
+        perm2 = mock.Mock()
+        group.permission_classes = [perm1, perm2]
+        # try removing existing permission
+        group.remove_permission(perm1)
+        assert group.permission_classes == [perm2]
+        # try removing non-existing permission
+        group.remove_permission(perm1)
+        assert group.permission_classes == [perm2]
+
+    @mock.patch.object(mod, 'BasePermission')
+    def test_permissions(self, BasePermission):
+        group = mod.BaseGroup('name')
+        perm1 = mock.Mock()
+        perm1.name = 'perm1'
+        perm2 = mock.Mock()
+        perm2.name = 'perm2'
+        group.permission_classes = [perm1, perm2]
+        assert group.permissions == ['perm1', 'perm2']
