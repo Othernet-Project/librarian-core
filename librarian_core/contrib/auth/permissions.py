@@ -1,6 +1,7 @@
 import functools
 import json
 
+from ...utils import is_string
 from ..databases.serializers import DateTimeDecoder, DateTimeEncoder
 
 from .base import BasePermission
@@ -50,17 +51,25 @@ class ACLPermission(BaseDynamicPermission):
         WRITE: WRITE,
         EXECUTE: EXECUTE
     }
+    VALID_BITMASKS = range(1, 8)
 
     def convert_permission(func):
         @functools.wraps(func)
         def wrapper(self, path, permission):
-            try:
-                permission = self.ALIASES[permission]
-            except KeyError:
-                msg = "Invalid permission specified: {0}".format(permission)
-                raise ValueError(msg)
+            if is_string(permission):
+                try:
+                    bitmask = sum([self.ALIASES[p] for p in list(permission)])
+                except KeyError:
+                    msg = "Invalid permission: {0}".format(permission)
+                    raise ValueError(msg)
             else:
-                return func(self, path, permission)
+                bitmask = permission
+
+            if bitmask not in self.VALID_BITMASKS:
+                msg = "Invalid permission: {0}".format(permission)
+                raise ValueError(msg)
+
+            return func(self, path, bitmask)
         return wrapper
 
     @convert_permission
@@ -103,4 +112,4 @@ class ACLPermission(BaseDynamicPermission):
     @convert_permission
     def is_granted(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
-        return existing & permission
+        return existing & permission == permission
