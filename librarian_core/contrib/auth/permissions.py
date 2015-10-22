@@ -75,33 +75,20 @@ class ACLPermission(BaseDynamicPermission):
     @convert_permission
     def grant(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
-        if existing & permission:
-            # permission already granted, so just keep as it is
-            new_permission = existing
-        else:
-            # add to existing permission
-            new_permission = existing + permission
-
-        self.data[path] = new_permission
+        self.data[path] = existing | permission
         self.save()
 
     @convert_permission
     def revoke(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
-        if existing & permission:
-            # contains permission so it needs to be revoked
-            new_permission = existing - permission
-        else:
-            # didn't even have that permission, so just retain the existing one
-            new_permission = existing
-
-        if new_permission == self.NO_PERMISSION:
+        permission = existing & ~permission
+        if permission == self.NO_PERMISSION:
             # when having no permission, we can freely just remove the whole
             # path as not having a path at all also means having no permissions
             # whatsoever
             self.data.pop(path, None)
         else:
-            self.data[path] = new_permission
+            self.data[path] = permission
 
         self.save()
 

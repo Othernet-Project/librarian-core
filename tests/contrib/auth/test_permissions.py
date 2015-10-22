@@ -97,9 +97,21 @@ class TestACLPermission(object):
         acl = mod.ACLPermission('id', db=db)
         acl.data = dict()
         acl.data['path'] = 4
-        acl.grant('path', 4)
-        assert acl.data['path'] == 4
+        acl.grant('path', 1)
+        assert acl.data['path'] == 5
         save.assert_called_once_with()
+
+        acl.grant('path', 1)
+        assert acl.data['path'] == 5
+
+        acl.grant('path', 2)
+        assert acl.data['path'] == 7
+
+        acl.grant('path', 3)
+        assert acl.data['path'] == 7
+
+        acl.grant('path', 6)
+        assert acl.data['path'] == 7
 
     @mock.patch.object(mod.ACLPermission, 'save')
     @mock.patch.object(mod.ACLPermission, '_load')
@@ -131,6 +143,15 @@ class TestACLPermission(object):
         assert acl.data == dict(path=3)
         save.assert_called_once_with()
 
+        acl.revoke('path', 4)
+        assert acl.data == dict(path=3)
+
+        acl.revoke('path', 1)
+        assert acl.data == dict(path=2)
+
+        acl.revoke('path', 2)
+        assert acl.data == dict()
+
     @mock.patch.object(mod.ACLPermission, 'save')
     @mock.patch.object(mod.ACLPermission, '_load')
     def test_clear(self, _load, save):
@@ -146,6 +167,13 @@ class TestACLPermission(object):
         db = mock.Mock()
         acl = mod.ACLPermission('id', db=db)
         acl.data = dict(path=5)
+        assert acl.is_granted('path', 1) is True
+        assert acl.is_granted('path', 4) is True
+        assert acl.is_granted('path', 5) is True
+        assert acl.is_granted('path', 2) is False
+        assert acl.is_granted('path', 6) is False
+        assert acl.is_granted('path', 3) is False
+        assert acl.is_granted('path', 7) is False
         assert acl.is_granted('path', 'r') is True
         assert acl.is_granted('path', 'x') is True
         assert acl.is_granted('path', 'rx') is True
