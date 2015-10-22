@@ -19,7 +19,10 @@ class BaseDynamicPermission(BasePermission):
         q = self.db.Select(sets='permissions',
                            where='name = :name AND identifier = :identifier')
         self.db.query(q, name=self.name, identifier=self.identifier)
-        return json.load(self.db.result.data, cls=DateTimeDecoder)
+        result = self.db.result
+        if result:
+            return json.loads(result.data, cls=DateTimeDecoder)
+        return {}
 
     def save(self):
         q = self.db.Replace('permissions',

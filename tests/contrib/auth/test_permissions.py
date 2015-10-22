@@ -34,9 +34,17 @@ class TestBaseDynamicPermission(object):
         db.query.assert_called_once_with(db.Select.return_value,
                                          name='dynamo',
                                          identifier='id')
-        json.load.assert_called_once_with(db.result.data,
-                                          cls=mod.DateTimeDecoder)
-        assert bdp.data == json.load.return_value
+        json.loads.assert_called_once_with(db.result.data,
+                                           cls=mod.DateTimeDecoder)
+        assert bdp.data == json.loads.return_value
+
+    @mock.patch.object(mod, 'json')
+    def test__load_no_data(self, json, dyn_perm_cls):
+        db = mock.Mock()
+        db.result = None
+        bdp = dyn_perm_cls('id', db=db)
+        assert not json.loads.called
+        assert bdp.data == {}
 
     @mock.patch.object(mod.BaseDynamicPermission, '_load')
     @mock.patch.object(mod, 'json')
