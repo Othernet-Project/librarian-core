@@ -35,6 +35,8 @@ class BaseDynamicPermission(BasePermission):
 
 
 class ACLPermission(BaseDynamicPermission):
+    name = 'acl'
+
     NO_PERMISSION = 0
     READ = 4
     WRITE = 2
