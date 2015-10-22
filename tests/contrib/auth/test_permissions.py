@@ -66,3 +66,13 @@ class TestBaseDynamicPermission(object):
                                          name=bdp.name,
                                          identifier=bdp.identifier,
                                          data=json.dumps.return_value)
+
+
+class TestACLPermission(object):
+
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_grant_wrong_permission(self, _load):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        with pytest.raises(ValueError):
+            acl.grant('path', 'F')

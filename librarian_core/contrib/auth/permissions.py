@@ -1,3 +1,4 @@
+import functools
 import json
 
 from ..databases.serializers import DateTimeDecoder, DateTimeEncoder
@@ -50,6 +51,19 @@ class ACLPermission(BaseDynamicPermission):
         EXECUTE: EXECUTE
     }
 
+    def convert_permission(func):
+        @functools.wraps(func)
+        def wrapper(self, path, permission):
+            try:
+                permission = self.ALIASES[permission]
+            except KeyError:
+                msg = "Invalid permission specified: {0}".format(permission)
+                raise ValueError(msg)
+            else:
+                return func(self, path, permission)
+        return wrapper
+
+    @convert_permission
     def grant(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
         if existing & permission:
@@ -62,6 +76,7 @@ class ACLPermission(BaseDynamicPermission):
         self.data[path] = new_permission
         self.save()
 
+    @convert_permission
     def revoke(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
         if existing & permission:
@@ -85,12 +100,7 @@ class ACLPermission(BaseDynamicPermission):
         self.data = {}
         self.save()
 
-    def is_granted(self, path, permission='r'):
-        try:
-            permission = self.ALIASES[permission]
-        except KeyError:
-            msg = "Invalid permission specified: {0}".format(permission)
-            raise ValueError(msg)
-        else:
-            existing = self.data.get(path, self.NO_PERMISSION)
-            return existing & permission
+    @convert_permission
+    def is_granted(self, path, permission):
+        existing = self.data.get(path, self.NO_PERMISSION)
+        return existing & permission
