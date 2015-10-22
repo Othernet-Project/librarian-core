@@ -1,6 +1,7 @@
+from ..databases.utils import from_csv, row_to_dict
+
 from .base import BaseGroup
 from .helpers import identify_database
-from .utils import from_csv, row_to_dict
 
 
 class GroupNotFound(Exception):

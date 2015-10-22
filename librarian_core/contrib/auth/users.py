@@ -6,14 +6,14 @@ import pbkdf2
 
 from bottle import request
 
-from ...utils import utcnow
+from ..databases.serializers import DateTimeDecoder, DateTimeEncoder
+from ..databases.utils import utcnow, from_csv, to_csv, row_to_dict
 
 from .base import BaseUser
 from .groups import Group
 from .helpers import identify_database
 from .options import Options
-from .serializers import DateTimeDecoder, DateTimeEncoder
-from .utils import from_csv, to_csv, row_to_dict, generate_random_key
+from .utils import generate_random_key
 
 
 def authenticated_only(func):
