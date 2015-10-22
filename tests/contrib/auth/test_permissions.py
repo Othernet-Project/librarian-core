@@ -71,8 +71,87 @@ class TestBaseDynamicPermission(object):
 class TestACLPermission(object):
 
     @mock.patch.object(mod.ACLPermission, '_load')
-    def test_grant_wrong_permission(self, _load):
+    def test_convert_permission(self, _load):
         db = mock.Mock()
         acl = mod.ACLPermission('id', db=db)
-        with pytest.raises(ValueError):
-            acl.grant('path', 'F')
+        fn = mock.Mock()
+        fn.__name__ = 'fn'
+        unwrapped = acl.convert_permission.__func__
+        decorated = unwrapped(fn)
+        bait = range(1, 8) + ['r', 'w', 'x', 'rw', 'rx', 'wx', 'wrx']
+        expected = range(1, 8) + [4, 2, 1, 6, 5, 3, 7]
+        for (in_perm, out_perm) in zip(bait, expected):
+            decorated(acl, 'path', in_perm)
+            fn.assert_called_once_with(acl, 'path', out_perm)
+            fn.reset_mock()
+
+        for perm in (0, 8, None, 'a', 'TT'):
+            with pytest.raises(ValueError):
+                decorated(acl, 'path', perm)
+            assert not fn.called
+
+    @mock.patch.object(mod.ACLPermission, 'save')
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_grant_already_granted(self, _load, save):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict()
+        acl.data['path'] = 4
+        acl.grant('path', 4)
+        assert acl.data['path'] == 4
+        save.assert_called_once_with()
+
+    @mock.patch.object(mod.ACLPermission, 'save')
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_grant_adds_new(self, _load, save):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict()
+        acl.grant('path', 4)
+        assert acl.data['path'] == 4
+        save.assert_called_once_with()
+
+    @mock.patch.object(mod.ACLPermission, 'save')
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_revoke_to_no_permission(self, _load, save):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict()
+        acl.revoke('path', 4)
+        assert acl.data == dict()
+        save.assert_called_once_with()
+
+    @mock.patch.object(mod.ACLPermission, 'save')
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_revoke_to_remaining_permissions(self, _load, save):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict(path=7)
+        acl.revoke('path', 4)
+        assert acl.data == dict(path=3)
+        save.assert_called_once_with()
+
+    @mock.patch.object(mod.ACLPermission, 'save')
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_clear(self, _load, save):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict(path=7)
+        acl.clear()
+        assert acl.data == dict()
+        save.assert_called_once_with()
+
+    @mock.patch.object(mod.ACLPermission, '_load')
+    def test_is_granted(self, _load):
+        db = mock.Mock()
+        acl = mod.ACLPermission('id', db=db)
+        acl.data = dict(path=5)
+        assert acl.is_granted('path', 'r') is True
+        assert acl.is_granted('path', 'x') is True
+        assert acl.is_granted('path', 'rx') is True
+        assert acl.is_granted('path', 'xr') is True
+        assert acl.is_granted('path', 'rw') is False
+        assert acl.is_granted('path', 'wr') is False
+        assert acl.is_granted('path', 'wx') is False
+        assert acl.is_granted('path', 'w') is False
+        assert acl.is_granted('invalid', 'w') is False
