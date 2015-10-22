@@ -77,7 +77,7 @@ class ACLPermission(BaseDynamicPermission):
         self.save()
 
     def clear(self):
-        self.data[self.DATA_KEY] = {}
+        self.data = {}
         self.save()
 
     def is_granted(self, path, permission='r'):
