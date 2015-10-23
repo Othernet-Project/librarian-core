@@ -78,8 +78,8 @@ class TestACLPermission(object):
         fn.__name__ = 'fn'
         unwrapped = acl.to_bitmask.__func__
         decorated = unwrapped(fn)
-        bait = range(1, 8) + ['r', 'w', 'x', 'rw', 'rx', 'wx', 'wrx']
-        expected = range(1, 8) + [4, 2, 1, 6, 5, 3, 7]
+        bait = list(range(1, 8)) + ['r', 'w', 'x', 'rw', 'rx', 'wx', 'wrx']
+        expected = list(range(1, 8)) + [4, 2, 1, 6, 5, 3, 7]
         for (in_perm, out_perm) in zip(bait, expected):
             decorated(acl, 'path', in_perm)
             fn.assert_called_once_with(acl, 'path', out_perm)
