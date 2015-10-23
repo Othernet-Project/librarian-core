@@ -1,0 +1,20 @@
+branches:
+  only:
+    - master
+    - develop
+
+language: python
+
+python:
+  - 2.7
+  - 3.4
+
+install:
+  - pip install .
+  - pip install coveralls
+
+script: coverage run --omit="*/site-packages/*" --module py.test
+
+after_success:
+  - coverage report -m --omit="*/site-packages/*"
+  - coveralls
