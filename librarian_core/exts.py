@@ -193,6 +193,9 @@ class ExtContainer(object):
         :param extensions:  names of extensions
         """
         names = extensions or list(self._calls.keys())
+        # references to the ``_calls`` dict are kept on other objects too, so
+        # it's not enough to just replace the dict with an empty one, when all
+        # calls need to be flushed
         for key in names:
             self._calls.pop(key, None)
 
