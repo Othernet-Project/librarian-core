@@ -36,12 +36,13 @@ def error_404(exc):
 
 @view('errors/500')
 def error_500(exc):
+    traceback = exc.traceback or exc.body
     logging.error("Unhandled error '%s' at %s %s:\n\n%s",
                   exc.exception,
                   request.method.upper(),
                   request.path,
-                  exc.traceback)
-    return dict(trace=exc.traceback)
+                  traceback)
+    return dict(trace=traceback)
 
 
 @view('errors/503')
