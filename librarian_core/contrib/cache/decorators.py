@@ -2,7 +2,9 @@ import functools
 
 from bottle import request
 
-from .utils import is_string, generate_key
+from ...utils import is_string
+
+from .utils import generate_key
 
 
 def cached(prefix='', timeout=None):

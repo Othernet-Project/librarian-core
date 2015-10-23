@@ -9,7 +9,7 @@ def test_generate_key(base_cache):
 
 
 def test_generate_key_with_weird_data(base_cache):
-    known_md5 = '4dc1a960cb2d99175da541ff089e5045'
+    known_md5 = '9aeccf0233a4973a4558407fbdc621dd'
     generated_md5 = mod.generate_key(None,
                                      u'les misérable',
                                      u'åß∂ƒ©˙∆˚¬…æ',
