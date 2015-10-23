@@ -141,7 +141,7 @@ class InMemoryCache(BaseCache):
         return prefix
 
     def invalidate(self, prefix):
-        for key in self._cache.keys():
+        for key in list(self._cache.keys()):
             if key.startswith(prefix):
                 self.delete(key)
 
