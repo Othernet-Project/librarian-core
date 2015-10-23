@@ -1,7 +1,21 @@
+try:
+    import __builtin__ as builtins
+except ImportError:
+    import builtins
+
 import mock
 import pytest
 
-from librarian_core.contrib.tasks import scheduler as mod
+original_import = builtins.__import__
+
+
+def py3_gevent_import(name, *args, **kwargs):
+    if name == 'gevent':
+        return mock.Mock()
+    return original_import(name, *args, **kwargs)
+
+with mock.patch.object(builtins, '__import__', side_effect=py3_gevent_import):
+    from librarian_core.contrib.tasks import scheduler as mod
 
 
 @pytest.fixture
