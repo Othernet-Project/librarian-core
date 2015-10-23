@@ -87,7 +87,8 @@ class Connection(object):
         self._conn.close()
 
     def __getattr__(self, attr):
-        return getattr(self._conn, attr)
+        conn = object.__getattribute__(self, '_conn')
+        return getattr(conn, attr)
 
     def __setattr__(self, attr, value):
         if not hasattr(self, attr) or attr == '_conn':
