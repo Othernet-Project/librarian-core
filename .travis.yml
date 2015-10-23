@@ -11,7 +11,8 @@ python:
 
 install:
   - pip install .
-  - pip install mock coveralls
+  - pip install mock==1.3.0
+  - pip install coveralls
 
 script: coverage run --omit="*/site-packages/*" --module py.test
 
