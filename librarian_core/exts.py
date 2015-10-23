@@ -192,7 +192,7 @@ class ExtContainer(object):
 
         :param extensions:  names of extensions
         """
-        names = extensions or self._calls.keys()
+        names = extensions or list(self._calls.keys())
         for key in names:
             self._calls.pop(key, None)
 
