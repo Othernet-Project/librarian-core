@@ -2,9 +2,7 @@ import datetime
 import json
 import re
 
-import dateutil.parser
-
-from ...utils import is_string
+from .utils import to_datetime
 
 
 NUMERIC_RE = re.compile(r'^[\d\.]+$')
@@ -28,9 +26,7 @@ class DateTimeDecoder(json.JSONDecoder):
 
     def object_hook(self, obj):
         for key, value in obj.items():
-            if is_string(value) and not NUMERIC_RE.match(value) and value:
-                try:
-                    obj[key] = dateutil.parser.parse(value)
-                except (ValueError, TypeError):
-                    pass
+            # keeps original value if not datetime
+            obj[key] = to_datetime(value)
+
         return obj
