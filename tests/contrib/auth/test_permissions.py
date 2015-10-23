@@ -71,12 +71,12 @@ class TestBaseDynamicPermission(object):
 class TestACLPermission(object):
 
     @mock.patch.object(mod.ACLPermission, '_load')
-    def test_convert_permission(self, _load):
+    def test_to_bitmask(self, _load):
         db = mock.Mock()
         acl = mod.ACLPermission('id', db=db)
         fn = mock.Mock()
         fn.__name__ = 'fn'
-        unwrapped = acl.convert_permission.__func__
+        unwrapped = acl.to_bitmask.__func__
         decorated = unwrapped(fn)
         bait = range(1, 8) + ['r', 'w', 'x', 'rw', 'rx', 'wx', 'wrx']
         expected = range(1, 8) + [4, 2, 1, 6, 5, 3, 7]

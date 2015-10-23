@@ -53,7 +53,7 @@ class ACLPermission(BaseDynamicPermission):
     }
     VALID_BITMASKS = range(1, 8)
 
-    def convert_permission(func):
+    def to_bitmask(func):
         @functools.wraps(func)
         def wrapper(self, path, permission):
             if is_string(permission):
@@ -72,13 +72,13 @@ class ACLPermission(BaseDynamicPermission):
             return func(self, path, bitmask)
         return wrapper
 
-    @convert_permission
+    @to_bitmask
     def grant(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
         self.data[path] = existing | permission
         self.save()
 
-    @convert_permission
+    @to_bitmask
     def revoke(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
         permission = existing & ~permission
@@ -96,7 +96,7 @@ class ACLPermission(BaseDynamicPermission):
         self.data = {}
         self.save()
 
-    @convert_permission
+    @to_bitmask
     def is_granted(self, path, permission):
         existing = self.data.get(path, self.NO_PERMISSION)
         return existing & permission == permission
