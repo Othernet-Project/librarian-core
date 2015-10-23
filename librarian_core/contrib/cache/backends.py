@@ -62,6 +62,7 @@ class BaseCache(object):
         return time.time() + timeout if timeout > 0 else timeout
 
     def has_expired(self, expires):
+        expires = expires or 0
         return expires > 0 and expires < time.time()
 
     @classmethod
