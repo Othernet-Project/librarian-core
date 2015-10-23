@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
 import time
+try:
+    import __builtin__ as builtins
+except ImportError:
+    import builtins
 
 import mock
 import pytest
@@ -22,7 +26,7 @@ def mc_cache(request):
 
         return client_lib
 
-    with mock.patch('__builtin__.__import__', side_effect=import_mock):
+    with mock.patch.object(builtins, '__import__', side_effect=import_mock):
         instance = mod.MemcachedCache(['127.0.0.1:11211'])
         assert instance._cache.name == request.param
         return instance
@@ -187,7 +191,9 @@ class TestMemcachedCache(object):
 
     def test_no_client_lib(self):
         with pytest.raises(RuntimeError):
-            with mock.patch('__builtin__.__import__', side_effect=ImportError):
+            with mock.patch.object(builtins,
+                                   '__import__',
+                                   side_effect=ImportError):
                 mod.MemcachedCache(['127.0.0.1:11211'])
 
     def test_get(self, mc_cache):
