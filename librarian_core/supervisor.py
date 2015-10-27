@@ -72,6 +72,9 @@ class Supervisor:
         # Register interrupt handler
         on_interrupt(self.halt)
 
+        # Set flag indicating that supervisor is running
+        self._running = True
+
         try:
             # Fire init-complete event. Command line handlers should be
             # executed at this point.
@@ -177,7 +180,7 @@ class Supervisor:
                 logging.exception('Component member installation failed.')
 
     def _enter_background_loop(self):
-        while True:
+        while self._running:
             sleep(self.LOOP_INTERVAL)
             # Fire background event
             self.events.publish(self.BACKGROUND, self)
@@ -201,6 +204,7 @@ class Supervisor:
 
     def halt(self):
         logging.info('Stopping the application.')
+        self._running = False
         self.server.stop(5)
         logging.info('Running shutdown hooks.')
         self.events.publish(self.SHUTDOWN, self)
