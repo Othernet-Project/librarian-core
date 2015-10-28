@@ -236,11 +236,13 @@ def test_create_invalid_credentials(credentials):
         mod.User.create(username, password, db=db)
 
 
-def test_create_invalid_credentials():
+@mock.patch.object(mod.User, 'from_username')
+@mock.patch.object(mod, 'request')
+def test_login_strip_whitespace(request, from_username):
     db = mock.Mock()
-    with pytest.raises(mod.InvalidUserCredentials):
-        mod.User.create('', 'password', db=db)
-        mod.User.create('username', '', db=db)
+    from_username.return_value = None
+    mod.User.login(' name  ', 'pass', db=db) is False
+    from_username.assert_called_once_with('name', db=db)
 
 
 @mock.patch.object(mod.User, 'from_username')

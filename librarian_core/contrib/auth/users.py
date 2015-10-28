@@ -144,6 +144,8 @@ class User(BaseUser):
     @classmethod
     @identify_database
     def login(cls, username, password, db):
+        username = (username or '').strip()
+        password = (password or '').strip()
         user = cls.from_username(username, db=db)
         if user and cls.is_valid_password(password, user.password):
             request.user = user
