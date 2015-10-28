@@ -217,7 +217,23 @@ def test_create_superuser(init, save):
     init.return_value = None
     init.side_effect = check_kwargs
     db = mock.Mock()
-    mod.User.create('username', 'password', is_superuser=True, db=db)
+    mod.User.create('username1234', 'password', is_superuser=True, db=db)
+
+
+@pytest.mark.parametrize('credentials', [
+    ('', 'password'),
+    ('a ', 'password'),
+    (' a', 'password'),
+    (' ', 'password'),
+    ('\n', 'password'),
+    ('toolonguserna', 'password'),
+    ('username', ''),
+])
+def test_create_invalid_credentials(credentials):
+    (username, password) = credentials
+    db = mock.Mock()
+    with pytest.raises(mod.InvalidUserCredentials):
+        mod.User.create(username, password, db=db)
 
 
 def test_create_invalid_credentials():

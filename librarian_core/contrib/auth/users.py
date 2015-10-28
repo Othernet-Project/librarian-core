@@ -1,6 +1,7 @@
 import functools
 import hashlib
 import json
+import re
 
 import pbkdf2
 
@@ -14,6 +15,9 @@ from .groups import Group
 from .helpers import identify_database
 from .options import Options
 from .utils import generate_random_key
+
+
+USERNAME_REGEX = re.compile(r'^\S{1,12}$')
 
 
 def authenticated_only(func):
@@ -110,7 +114,7 @@ class User(BaseUser):
     @identify_database
     def create(cls, username, password, is_superuser=False, db=None,
                reset_token=None):
-        if not username or not password:
+        if not USERNAME_REGEX.match(username) or not password:
             raise InvalidUserCredentials()
 
         if not reset_token:
