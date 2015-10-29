@@ -60,8 +60,8 @@ class Supervisor:
         self.server = None
         self.app = self.wsgi = Bottle()
         self.app.supervisor = self
-        self.events = PubSub()
         self.exts = ExtContainer()
+        self.exts.events = PubSub()
 
         # Load core configuration
         self._configure(root_dir)
@@ -78,7 +78,7 @@ class Supervisor:
         try:
             # Fire init-complete event. Command line handlers should be
             # executed at this point.
-            self.events.publish(self.INIT_COMPLETE, self)
+            self.exts.events.publish(self.INIT_COMPLETE, self)
         except EarlyExit as exc:
             # One of the command line handlers probably requested early exit
             sys.exit(exc.exit_code)
@@ -106,11 +106,11 @@ class Supervisor:
         self.config['root'] = root_dir
 
     def _install_hook(self, name, fn, **kwargs):
-        self.events.subscribe(name, fn)
+        self.exts.events.subscribe(name, fn)
         # the initialize hook must be fired immediately in the scope to
         # which it belongs only
         if name == self.INITIALIZE:
-            self.events.publish(name, self, scope=kwargs['mod_name'])
+            self.exts.events.publish(name, self, scope=kwargs['mod_name'])
 
     def _install_routes(self, fn, **kwargs):
         route_config = fn(self.config)
@@ -158,10 +158,10 @@ class Supervisor:
         handler(self, **member)
         # notify possibly other components that a new component has been
         # installed successfully
-        self.events.publish(self.COMPONENT_MEMBER_LOADED,
-                            self,
-                            member=member,
-                            config=config)
+        self.exts.events.publish(self.COMPONENT_MEMBER_LOADED,
+                                 self,
+                                 member=member,
+                                 config=config)
         logging.debug("LOADED: {0}".format('::'.join([member['pkg_path'],
                                                       member['name']])))
 
@@ -183,11 +183,11 @@ class Supervisor:
         while self._running:
             sleep(self.LOOP_INTERVAL)
             # Fire background event
-            self.events.publish(self.BACKGROUND, self)
+            self.exts.events.publish(self.BACKGROUND, self)
 
     def start(self):
         # Fire pre-start event right before starting the WSGI server.
-        self.events.publish(self.PRE_START, self)
+        self.exts.events.publish(self.PRE_START, self)
         host = self.config['app.bind']
         port = self.config['app.port']
         self.server = pywsgi.WSGIServer((host, port), self.wsgi, log=None)
@@ -198,7 +198,7 @@ class Supervisor:
             print('Started server on http://%s:%s/' % (host, port))
 
         # Fire post-start event after WSGI server is started.
-        self.events.publish(self.POST_START, self)
+        self.exts.events.publish(self.POST_START, self)
         # Start background loop
         self._enter_background_loop()
 
@@ -207,5 +207,5 @@ class Supervisor:
         self._running = False
         self.server.stop(5)
         logging.info('Running shutdown hooks.')
-        self.events.publish(self.SHUTDOWN, self)
+        self.exts.events.publish(self.SHUTDOWN, self)
         logging.info('Clean shutdown.')
