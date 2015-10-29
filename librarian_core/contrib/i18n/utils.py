@@ -1,15 +1,16 @@
-from bottle import request, response
+from bottle import request
+
+from ..system.utils import get_plugin
 
 
 def set_default_locale(code):
-    for plugin in request.app.plugins:
-        if getattr(plugin, 'name', '') == 'i18n':
-            plugin.default_locale = code
+    i18n = get_plugin('i18n')
+    i18n.default_locale = code
 
 
 def set_current_locale(code):
-    request.locale = code
-    response.set_cookie('locale', code, path='/')
+    i18n = get_plugin('i18n')
+    i18n.set_locale(code)
 
 
 def get_enabled_locales():
