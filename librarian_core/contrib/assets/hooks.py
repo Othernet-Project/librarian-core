@@ -30,7 +30,7 @@ def component_member_loaded(supervisor, member, config):
         static_url = config.pop('assets.url', DEFAULT_STATIC_URL)
         js_bundles = config.pop('assets.js_bundles', [])
         css_bundles = config.pop('assets.css_bundles', [])
-        if static_path:
+        if static_path and os.path.exists(static_path):
             static_path = os.path.join(member['pkg_path'], static_path)
             src_pair = (static_path, static_url)
             supervisor.config['assets.sources'][pkg_name] = src_pair
