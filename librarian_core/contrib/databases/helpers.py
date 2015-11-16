@@ -23,7 +23,7 @@ def ensure_dir(path):
 
 
 def get_database_path(conf, name):
-    return os.path.join(conf['database.path'], name + '.sqlite')
+    return os.path.abspath(os.path.join(conf['database.path'], name + '.db'))
 
 
 def get_database_configs(conf):
@@ -35,8 +35,12 @@ def get_database_configs(conf):
     return databases
 
 
-def get_databases(db_confs, debug=False):
-    connections = dict((db_name, Database.connect(db_config['path']))
+def get_databases(db_confs, host, port, user, password, debug=False):
+    connections = dict((db_name, Database.connect(host,
+                                                  port,
+                                                  db_config['path'],
+                                                  user,
+                                                  password))
                        for db_name, db_config in db_confs.items())
     return DatabaseContainer(connections, debug=debug)
 
@@ -48,7 +52,12 @@ def init_databases(config):
     for db_config in database_configs.values():
         ensure_dir(os.path.dirname(db_config['path']))
 
-    databases = get_databases(database_configs, debug=bottle.DEBUG)
+    databases = get_databases(database_configs,
+                              config['database.host'],
+                              config['database.port'],
+                              config['database.user'],
+                              config['database.password'],
+                              debug=bottle.DEBUG)
     # Run migrations on all databases
     for db_name, db_config in database_configs.items():
         migration_pkg = '{0}.migrations.{1}'.format(db_config['package_name'],

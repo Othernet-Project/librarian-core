@@ -91,7 +91,7 @@ def drop_db(db):
 
     :param db:  database object
     """
-    path, extension = os.path.splitext(db.connection.path)
+    path, extension = os.path.splitext(db.connection.database)
     db.close()
     for ext in SQLITE_EXTENSIONS:
         file_path = '.'.join([path, ext])
