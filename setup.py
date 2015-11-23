@@ -26,6 +26,8 @@ setup(
         'gevent',
         'Mako',
         'pbkdf2',
+        'psycopg2',
+        'psycogreen',
         'python-dateutil',
         'pytz',
         'sqlize',
