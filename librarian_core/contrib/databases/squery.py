@@ -26,6 +26,7 @@ from pytz import utc
 
 SLASH = re.compile(r'\\')
 SQLITE_DATE_TYPES = ('date', 'datetime', 'timestamp')
+MAX_VARIABLE_NUMBER = 999
 
 
 def from_utc_timestamp(timestamp):
@@ -115,6 +116,7 @@ class Database(object):
     Delete = Delete
     Insert = Insert
     Replace = Replace
+    MAX_VARIABLE_NUMBER = MAX_VARIABLE_NUMBER
 
     def __init__(self, conn, debug=False):
         self.conn = conn
