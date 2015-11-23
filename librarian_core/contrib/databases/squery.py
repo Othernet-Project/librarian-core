@@ -104,8 +104,8 @@ class Connection(object):
 class Database(object):
 
     # Provide access to query classes for easier access
-    sqlin = sqlin
-    sqlarray = sqlarray
+    sqlin = staticmethod(sqlin)
+    sqlarray = staticmethod(sqlarray)
     From = From
     Where = Where
     Group = Group
