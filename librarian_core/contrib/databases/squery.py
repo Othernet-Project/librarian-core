@@ -24,6 +24,7 @@ from sqlize import (From, Where, Group, Order, Limit, Select, Update, Delete,
 
 
 SLASH = re.compile(r'\\')
+MAX_VARIABLE_NUMBER = 999
 
 
 class Connection(object):
@@ -73,8 +74,8 @@ class Connection(object):
 class Database(object):
 
     # Provide access to query classes for easier access
-    sqlin = sqlin
-    sqlarray = sqlarray
+    sqlin = staticmethod(sqlin)
+    sqlarray = staticmethod(sqlarray)
     From = From
     Where = Where
     Group = Group
@@ -85,6 +86,7 @@ class Database(object):
     Delete = Delete
     Insert = Insert
     Replace = Replace
+    MAX_VARIABLE_NUMBER = MAX_VARIABLE_NUMBER
 
     def __init__(self, conn, debug=False):
         self.conn = conn
