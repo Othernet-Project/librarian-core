@@ -22,36 +22,27 @@ def ensure_dir(path):
         os.makedirs(path)
 
 
-def get_database_path(conf, name):
-    return os.path.abspath(os.path.join(conf['database.path'], name + '.db'))
-
-
 def get_database_configs(conf):
     databases = dict()
     for pkg_name, db_names in conf['database.sources'].items():
         for name in db_names:
-            databases[name] = dict(package_name=pkg_name,
-                                   path=get_database_path(conf, name))
+            databases[name] = dict(package_name=pkg_name)
     return databases
 
 
 def get_databases(db_confs, host, port, user, password, debug=False):
-    connections = dict((db_name, Database.connect(host,
-                                                  port,
-                                                  db_config['path'],
-                                                  user,
-                                                  password))
-                       for db_name, db_config in db_confs.items())
-    return DatabaseContainer(connections, debug=debug)
+    databases = dict((db_name, Database.connect(host,
+                                                port,
+                                                db_name,
+                                                user,
+                                                password,
+                                                debug=debug))
+                     for db_name, db_config in db_confs.items())
+    return DatabaseContainer(databases)
 
 
 def init_databases(config):
     database_configs = get_database_configs(config)
-
-    # Make sure all necessary directories are present
-    for db_config in database_configs.values():
-        ensure_dir(os.path.dirname(db_config['path']))
-
     databases = get_databases(database_configs,
                               config['database.host'],
                               config['database.port'],
