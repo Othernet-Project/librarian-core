@@ -21,6 +21,7 @@ import re
 import sys
 
 import psycopg2
+import sqlize
 
 
 PYMOD_RE = re.compile(r'^((\d{2})_(\d{2})_[^.]+)\.pyc?$', re.I)
@@ -29,9 +30,10 @@ MIGRATION_TABLE = 'migrations'
 GET_VERSION_SQL = 'SELECT version FROM {table:s} WHERE id == 0;'.format(
     table=MIGRATION_TABLE
 )
-SET_VERSION_SQL = 'REPLACE INTO {table:s} (id, version) VALUES (0, ?);'.format(
-    table=MIGRATION_TABLE
-)
+SET_VERSION_SQL = lambda version: sqlize.Replace(table=MIGRATION_TABLE,
+                                                 cols=('id', 'version'),
+                                                 vals=('0', str(version)),
+                                                 where='id = 0')
 CREATE_MIGRATION_TABLE_SQL = """
 CREATE TABLE {table:s}
 (
@@ -126,7 +128,7 @@ def get_version(db):
         if 'does not exist' in str(exc):
             db.recreate()
             db.executescript(CREATE_MIGRATION_TABLE_SQL)
-            db.execute(SET_VERSION_SQL, 0)
+            db.execute(SET_VERSION_SQL(0))
             return (0, 0)
         raise
     else:
@@ -141,7 +143,7 @@ def set_version(db, major_version, minor_version):
     :param minor_version:  integer minor version of migration
     """
     version = pack_version(major_version, minor_version)
-    db.execute(SET_VERSION_SQL.format(version=version))
+    db.execute(SET_VERSION_SQL(version))
 
 
 def run_migration(major_version, minor_version, db, mod, conf={}):
