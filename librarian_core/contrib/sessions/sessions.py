@@ -74,9 +74,12 @@ class Session(object):
 
     def save(self):
         db = request.db.sessions
-        q = db.Replace('sessions', cols=['session_id', 'data', 'expires'])
-        db.query(q, session_id=self.id, data=self._dump(),
-                 expires=self.expires)
+        query = db.Replace('sessions',
+                           cols=['session_id', 'data', 'expires'],
+                           where='session_id = %(session_id)s')
+        db.execute(query, dict(session_id=self.id,
+                               data=self._dump(),
+                               expires=self.expires))
         self.modified = False
         return self
 
@@ -215,9 +218,8 @@ class Session(object):
         :returns:           valid `Session` instance.
         """
         db = request.db.sessions
-        q = db.Select(sets='sessions', where='session_id = ?')
-        db.query(q, session_id)
-        session_data = db.result
+        q = db.Select(sets='sessions', where='session_id = %s')
+        session_data = db.fetchone(q, (session_id,))
         if not session_data:
             raise SessionInvalid(session_id)
         sess = cls(**session_data)
