@@ -66,19 +66,21 @@ class User(BaseUser):
 
     @authenticated_only
     def save(self):
-        query = self.db.Replace('users', cols=('username',
-                                               'password',
-                                               'reset_token',
-                                               'created',
-                                               'options',
-                                               'groups'))
-        self.db.query(query,
-                      username=self.username,
-                      password=self.password,
-                      reset_token=self.reset_token,
-                      created=self.created,
-                      options=self.options.to_json(),
-                      groups=to_csv([group.name for group in self.groups]))
+        query = self.db.Replace('users',
+                                cols=('username',
+                                      'password',
+                                      'reset_token',
+                                      'created',
+                                      'options',
+                                      'groups'),
+                                where='username = %(username)s')
+        data = dict(username=self.username,
+                    password=self.password,
+                    reset_token=self.reset_token,
+                    created=self.created,
+                    options=self.options.to_json(),
+                    groups=to_csv([group.name for group in self.groups]))
+        self.db.execute(query, data)
 
     def to_json(self):
         data = dict(username=self.username,
@@ -96,9 +98,9 @@ class User(BaseUser):
     @classmethod
     @identify_database
     def from_username(cls, username, db):
-        query = db.Select(sets='users', where='username = ?')
-        db.query(query, username)
-        return cls(**row_to_dict(db.result))
+        query = db.Select(sets='users', where='username = %s')
+        user = db.fetchone(query, (username,))
+        return cls(**row_to_dict(user))
 
     @classmethod
     @identify_database
@@ -106,9 +108,9 @@ class User(BaseUser):
         sha1 = hashlib.sha1()
         sha1.update(token.encode('utf8'))
         hashed_token = sha1.hexdigest()
-        query = db.Select(sets='users', where='reset_token = ?')
-        db.query(query, hashed_token)
-        return cls(**row_to_dict(db.result))
+        query = db.Select(sets='users', where='reset_token = %s')
+        user = db.fetchone(query, (hashed_token,))
+        return cls(**row_to_dict(user))
 
     @classmethod
     @identify_database
@@ -161,8 +163,9 @@ class User(BaseUser):
         password = cls.encrypt_password(clear_text)
         query = db.Update('users',
                           password=':password',
-                          where='username = :username')
-        db.query(query, username=username, password=password)
+                          where='username = %(username)s')
+        db.execute(query, dict(username=username,
+                               password=password))
 
     @staticmethod
     def encrypt_password(password):

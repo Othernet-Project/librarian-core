@@ -18,22 +18,26 @@ class BaseDynamicPermission(BasePermission):
         self.data = self._load()
 
     def _load(self):
-        q = self.db.Select(sets='permissions',
-                           where='name = :name AND identifier = :identifier')
-        self.db.query(q, name=self.name, identifier=self.identifier)
-        result = self.db.result
+        q = self.db.Select(
+            sets='permissions',
+            where='name = %(name)s AND identifier = %(identifier)s'
+        )
+        result = self.db.fetchone(q, dict(name=self.name,
+                                          identifier=self.identifier))
         if result:
-            return json.loads(result.data, cls=DateTimeDecoder)
+            return json.loads(result['data'], cls=DateTimeDecoder)
         return {}
 
     def save(self):
-        q = self.db.Replace('permissions',
-                            name=':name',
-                            identifier=':identifier',
-                            data=':data',
-                            where='name = :name AND identifier = :identifier')
+        q = self.db.Replace(
+            'permissions',
+            cols=('name', 'identifier', 'data'),
+            where='name = %(name)s AND identifier = %(identifier)s'
+        )
         data = json.dumps(self.data, cls=DateTimeEncoder)
-        self.db.query(q, name=self.name, identifier=self.identifier, data=data)
+        self.db.execute(q, dict(name=self.name,
+                                identifier=self.identifier,
+                                data=data))
 
 
 class ACLPermission(BaseDynamicPermission):

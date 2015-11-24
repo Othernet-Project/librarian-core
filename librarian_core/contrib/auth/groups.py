@@ -18,9 +18,8 @@ class Group(BaseGroup):
     @classmethod
     @identify_database
     def from_name(cls, group_name, db):
-        query = db.Select(sets='groups', where='name = :name')
-        db.query(query, name=group_name)
-        group = db.result
+        query = db.Select(sets='groups', where='name = %(name)s')
+        group = db.fetchone(query, dict(name=group_name))
         group = row_to_dict(group) if group else {}
 
         if group:
@@ -30,12 +29,11 @@ class Group(BaseGroup):
         raise GroupNotFound(group_name)
 
     def save(self):
-        query = self.db.Replace('groups',
-                                name=':name',
-                                permissions=':permissions',
-                                has_superpowers=':has_superpowers',
-                                where='name = :name')
-        self.db.query(query,
-                      name=self.name,
-                      permissions=self.permissions,
-                      has_superpowers=self.has_superpowers)
+        query = self.db.Replace(
+            'groups',
+            cols=('name', 'permissions', 'has_superpowers'),
+            where='name = %(name)s'
+        )
+        self.db.execute(query, dict(name=self.name,
+                                    permissions=self.permissions,
+                                    has_superpowers=self.has_superpowers))
