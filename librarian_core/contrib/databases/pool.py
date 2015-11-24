@@ -5,7 +5,7 @@ import contextlib
 import gevent
 from gevent.queue import Queue
 from gevent.socket import wait_read, wait_write
-from psycopg2 import extensions, OperationalError, connect
+from psycopg2 import extensions, extras, OperationalError, connect
 
 
 if sys.version_info[0] >= 3:
@@ -97,8 +97,9 @@ class DatabaseConnectionPool(object):
     @contextlib.contextmanager
     def cursor(self, *args, **kwargs):
         isolation_level = kwargs.pop('isolation_level', None)
+        cursor_factory = kwargs.pop('cursor_factory', extras.DictCursor)
         with self.connection(isolation_level) as conn:
-            yield conn.cursor(*args, **kwargs)
+            yield conn.cursor(cursor_factory=cursor_factory, *args, **kwargs)
 
     def _rollback(self, conn):
         try:
