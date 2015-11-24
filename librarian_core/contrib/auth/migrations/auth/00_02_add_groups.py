@@ -1,15 +1,15 @@
 SQL = """
 create table groups
 (
-    name varchar primary_key unique not null,   -- unique group name
-    permissions text,                           -- comma separated list of permissions
-    has_superpowers boolean not null default 0  -- is superuser?
+    name varchar primary key,                       -- unique group name
+    permissions text,                               -- comma separated list of permissions
+    has_superpowers boolean not null default false  -- is superuser?
 );
 """
 
 SQL_CREATE_GROUP = """
 INSERT INTO groups (name, permissions, has_superpowers)
-VALUES ('superuser', '', 1);
+VALUES ('superuser', '', true);
 """
 
 
