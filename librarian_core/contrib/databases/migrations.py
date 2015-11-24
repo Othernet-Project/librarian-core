@@ -114,6 +114,13 @@ def unpack_version(version):
     return (major_version, minor_version)
 
 
+def recreate(db):
+    db.recreate()
+    db.executescript(CREATE_MIGRATION_TABLE_SQL)
+    db.execute(SET_VERSION_SQL(0))
+    return (0, 0)
+
+
 def get_version(db):
     """ Query database and return migration version. WARNING: side effecting
     function! if no version information can be found, any existing database
@@ -126,15 +133,10 @@ def get_version(db):
         (version,) = db.fetchone(GET_VERSION_SQL)
     except psycopg2.ProgrammingError as exc:
         if 'does not exist' in str(exc):
-            db.recreate()
-            db.executescript(CREATE_MIGRATION_TABLE_SQL)
-            db.execute(SET_VERSION_SQL(0))
-            return (0, 0)
+            return recreate(db)
         raise
     except ValueError:
-        db.recreate()
-        db.executescript(CREATE_MIGRATION_TABLE_SQL)
-        db.execute(SET_VERSION_SQL(0))
+        return recreate(db)
     else:
         return unpack_version(version)
 
