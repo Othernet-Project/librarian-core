@@ -20,12 +20,25 @@ import os
 import re
 import sys
 
+import psycopg2
 
-VERSION_MULTIPLIER = 10000
-SQLITE_EXTENSIONS = ('sqlite', 'sqlite-shm', 'sqlite-wal')
-GET_VERSION_SQL = "PRAGMA user_version"
-SET_VERSION_SQL = "PRAGMA user_version = {version:d}"
+
 PYMOD_RE = re.compile(r'^((\d{2})_(\d{2})_[^.]+)\.pyc?$', re.I)
+VERSION_MULTIPLIER = 10000
+MIGRATION_TABLE = 'migrations'
+GET_VERSION_SQL = 'SELECT version FROM {table:s} WHERE id == 0;'.format(
+    table=MIGRATION_TABLE
+)
+SET_VERSION_SQL = 'REPLACE INTO {table:s} (id, version) VALUES (0, ?);'.format(
+    table=MIGRATION_TABLE
+)
+CREATE_MIGRATION_TABLE_SQL = """
+CREATE TABLE {table:s}
+(
+    id serial primary key,
+    version integer null
+);
+""".format(table=MIGRATION_TABLE)
 
 
 def get_mods(package):
@@ -86,21 +99,6 @@ def load_mod(module, package):
     return importlib.import_module(name, package=package.__name__)
 
 
-def drop_db(db):
-    """ Delete the passed in database, and reconnect afterwards.
-
-    :param db:  database object
-    """
-    path, extension = os.path.splitext(db.connection.database)
-    db.close()
-    for ext in SQLITE_EXTENSIONS:
-        file_path = '.'.join([path, ext])
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    db.reconnect()
-
-
 def pack_version(major_version, minor_version):
     """Pack the two version integers into one int."""
     return major_version * VERSION_MULTIPLIER + minor_version
@@ -122,13 +120,17 @@ def get_version(db):
     :param db:  connetion object
     :returns:   current migration version
     """
-    db.query(GET_VERSION_SQL)
-    version = db.result.user_version
-    if not version:
-        drop_db(db)
-        return (0, 0)
-
-    return unpack_version(version)
+    try:
+        version = db.fetchone(GET_VERSION_SQL)
+    except psycopg2.ProgrammingError as exc:
+        if 'does not exist' in str(exc):
+            db.recreate()
+            db.executescript(CREATE_MIGRATION_TABLE_SQL)
+            db.execute(SET_VERSION_SQL, 0)
+            return (0, 0)
+        raise
+    else:
+        return unpack_version(version)
 
 
 def set_version(db, major_version, minor_version):
@@ -139,7 +141,7 @@ def set_version(db, major_version, minor_version):
     :param minor_version:  integer minor version of migration
     """
     version = pack_version(major_version, minor_version)
-    db.query(SET_VERSION_SQL.format(version=version))
+    db.execute(SET_VERSION_SQL.format(version=version))
 
 
 def run_migration(major_version, minor_version, db, mod, conf={}):
