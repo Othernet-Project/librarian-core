@@ -183,4 +183,3 @@ def migrate(db, package, conf={}):
         mod = load_mod(modname, package)
         run_migration(major_version, minor_version, db, mod, conf)
         logging.debug("Finished migrating to %s", modname)
-    db.refresh_table_stats()
