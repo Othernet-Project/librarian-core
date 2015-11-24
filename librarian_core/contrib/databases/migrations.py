@@ -27,7 +27,7 @@ import sqlize
 PYMOD_RE = re.compile(r'^((\d{2})_(\d{2})_[^.]+)\.pyc?$', re.I)
 VERSION_MULTIPLIER = 10000
 MIGRATION_TABLE = 'migrations'
-GET_VERSION_SQL = 'SELECT version FROM {table:s} WHERE id == 0;'.format(
+GET_VERSION_SQL = 'SELECT version FROM {table:s} WHERE id = 0;'.format(
     table=MIGRATION_TABLE
 )
 SET_VERSION_SQL = lambda version: sqlize.Replace(table=MIGRATION_TABLE,
@@ -123,7 +123,7 @@ def get_version(db):
     :returns:   current migration version
     """
     try:
-        version = db.fetchone(GET_VERSION_SQL)
+        (version,) = db.fetchone(GET_VERSION_SQL)
     except psycopg2.ProgrammingError as exc:
         if 'does not exist' in str(exc):
             db.recreate()
@@ -131,6 +131,10 @@ def get_version(db):
             db.execute(SET_VERSION_SQL(0))
             return (0, 0)
         raise
+    except ValueError:
+        db.recreate()
+        db.executescript(CREATE_MIGRATION_TABLE_SQL)
+        db.execute(SET_VERSION_SQL(0))
     else:
         return unpack_version(version)
 
