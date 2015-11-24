@@ -136,12 +136,9 @@ def get_version(db):
             return recreate(db)
         raise
     else:
-        try:
-            (version,) = version
-        except (ValueError, TypeError):
+        if version is None:
             return recreate(db)
-        else:
-            return unpack_version(version)
+        return unpack_version(version)
 
 
 def set_version(db, major_version, minor_version):

@@ -77,7 +77,10 @@ class Database(object):
 
     @serialize_query
     def fetchone(self, query, *args, **kwargs):
-        return self.pool.fetchone(query, *args, **kwargs)
+        result = self.pool.fetchone(query, *args, **kwargs)
+        if result:
+            (result,) = result
+        return result
 
     @serialize_query
     def fetchall(self, query, *args, **kwargs):
