@@ -28,7 +28,7 @@ setup(
         'pbkdf2',
         'python-dateutil',
         'pytz',
-        'sqlize',
+        'squery-lite',
         'webassets',
     ],
     classifiers=[
