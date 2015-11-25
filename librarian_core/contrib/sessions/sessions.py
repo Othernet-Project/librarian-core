@@ -85,7 +85,7 @@ class Session(object):
 
     def delete(self):
         db = request.db.sessions
-        q = db.Delete('sessions', where='session_id = ?')
+        q = db.Delete('sessions', where='session_id = %s')
         db.execute(q, (self.id,))
         return self
 
