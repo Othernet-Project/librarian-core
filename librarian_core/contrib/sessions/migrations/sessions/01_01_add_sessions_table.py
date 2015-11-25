@@ -3,7 +3,7 @@ create table sessions
 (
     session_id varchar primary key,       -- session id
     data varchar,                         -- arbitary session data
-    expires timestamp not null            -- timestamp when session expires
+    expires timestamptz not null          -- timestamp when session expires
 );
 """
 
