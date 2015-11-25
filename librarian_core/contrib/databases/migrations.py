@@ -31,9 +31,9 @@ GET_VERSION_SQL = 'SELECT version FROM {table:s} WHERE id = 0;'.format(
     table=MIGRATION_TABLE
 )
 SET_VERSION_SQL = lambda version: sqlize.Replace(table=MIGRATION_TABLE,
+                                                 constraints=('id',),
                                                  cols=('id', 'version'),
-                                                 vals=('0', str(version)),
-                                                 where='id = 0')
+                                                 vals=('0', str(version)))
 CREATE_MIGRATION_TABLE_SQL = """
 CREATE TABLE {table:s}
 (
