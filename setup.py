@@ -30,7 +30,7 @@ setup(
         'psycogreen',
         'python-dateutil',
         'pytz',
-        'sqlize',
+        'squery-pg',
         'webassets',
     ],
     classifiers=[

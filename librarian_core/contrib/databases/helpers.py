@@ -12,8 +12,8 @@ import os
 
 import bottle
 
-from .migrations import migrate
-from .squery import Database, DatabaseContainer
+from squery_pg.migrations import migrate
+from squery_pg.squery_pg import Database, DatabaseContainer
 
 
 def ensure_dir(path):
