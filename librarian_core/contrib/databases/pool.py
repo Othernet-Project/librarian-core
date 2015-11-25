@@ -34,6 +34,8 @@ extensions.set_wait_callback(gevent_wait_callback)
 
 
 class DatabaseConnectionPool(object):
+    DEFAULT_ISOLATION_LEVEL = None
+    DEFAULT_CURSOR_FACTORY = extras.DictCursor
 
     def __init__(self, maxsize=100):
         if not isinstance(maxsize, integer_types):
@@ -96,8 +98,10 @@ class DatabaseConnectionPool(object):
 
     @contextlib.contextmanager
     def cursor(self, *args, **kwargs):
-        isolation_level = kwargs.pop('isolation_level', None)
-        cursor_factory = kwargs.pop('cursor_factory', extras.DictCursor)
+        isolation_level = kwargs.pop('isolation_level',
+                                     self.DEFAULT_ISOLATION_LEVEL)
+        cursor_factory = kwargs.pop('cursor_factory',
+                                    self.DEFAULT_CURSOR_FACTORY)
         with self.connection(isolation_level) as conn:
             yield conn.cursor(cursor_factory=cursor_factory, *args, **kwargs)
 
