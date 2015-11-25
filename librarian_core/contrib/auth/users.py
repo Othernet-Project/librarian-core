@@ -67,13 +67,13 @@ class User(BaseUser):
     @authenticated_only
     def save(self):
         query = self.db.Replace('users',
+                                constraints=['username'],
                                 cols=('username',
                                       'password',
                                       'reset_token',
                                       'created',
                                       'options',
-                                      'groups'),
-                                where='username = %(username)s')
+                                      'groups'))
         data = dict(username=self.username,
                     password=self.password,
                     reset_token=self.reset_token,

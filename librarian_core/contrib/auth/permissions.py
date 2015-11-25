@@ -29,11 +29,9 @@ class BaseDynamicPermission(BasePermission):
         return {}
 
     def save(self):
-        q = self.db.Replace(
-            'permissions',
-            cols=('name', 'identifier', 'data'),
-            where='name = %(name)s AND identifier = %(identifier)s'
-        )
+        q = self.db.Replace('permissions',
+                            constraints=('name', 'identifier'),
+                            cols=('name', 'identifier', 'data'))
         data = json.dumps(self.data, cls=DateTimeEncoder)
         self.db.execute(q, dict(name=self.name,
                                 identifier=self.identifier,

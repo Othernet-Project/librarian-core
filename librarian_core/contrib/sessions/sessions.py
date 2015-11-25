@@ -75,8 +75,8 @@ class Session(object):
     def save(self):
         db = request.db.sessions
         query = db.Replace('sessions',
-                           cols=['session_id', 'data', 'expires'],
-                           where='session_id = %(session_id)s')
+                           constraints=['session_id'],
+                           cols=['session_id', 'data', 'expires'])
         db.execute(query, dict(session_id=self.id,
                                data=self._dump(),
                                expires=self.expires))

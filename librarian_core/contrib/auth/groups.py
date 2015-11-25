@@ -31,8 +31,8 @@ class Group(BaseGroup):
     def save(self):
         query = self.db.Replace(
             'groups',
+            constraints=['name'],
             cols=('name', 'permissions', 'has_superpowers'),
-            where='name = %(name)s'
         )
         self.db.execute(query, dict(name=self.name,
                                     permissions=self.permissions,
