@@ -25,7 +25,7 @@ from .pool import PostgresConnectionPool
 AUTOCOMMIT = psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
 SLASH = re.compile(r'\\')
 MAX_VARIABLE_NUMBER = 999
-DEFAULT_MAX_POOL_SIZE = 5
+DEFAULT_MAX_POOL_SIZE = 100
 
 
 class Database(object):
