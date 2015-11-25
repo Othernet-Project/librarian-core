@@ -130,14 +130,15 @@ def get_version(db):
     :returns:   current migration version
     """
     try:
-        version = db.fetchone(GET_VERSION_SQL)
+        result = db.fetchone(GET_VERSION_SQL)
     except psycopg2.ProgrammingError as exc:
         if 'does not exist' in str(exc):
             return recreate(db)
         raise
     else:
-        if version is None:
+        if result is None:
             return recreate(db)
+        version = result['version']
         return unpack_version(version)
 
 
