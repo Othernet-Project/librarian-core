@@ -28,6 +28,10 @@ MAX_VARIABLE_NUMBER = 999
 DEFAULT_MAX_POOL_SIZE = 100
 
 
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
+
+
 class Database(object):
 
     # Provide access to query classes for easier access
