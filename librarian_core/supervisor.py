@@ -166,7 +166,7 @@ class Supervisor:
                                                       member['name']])))
 
     def _load_components(self):
-        components = self.config['app.components']
+        components = self.config['app.components'] or []
         # load default core components if core override flag was not set
         if not self.config.get('app.core_override'):
             core_components = self._get_core_components()
