@@ -12,8 +12,26 @@ import os
 
 import bottle
 
-from squery_pg.migrations import migrate
-from squery_pg.squery_pg import Database, DatabaseContainer
+
+POSTGRES_BACKEND = 'postgres'
+SQLITE_BACKEND = 'sqlite'
+SERVERLESS_DATABASE_BACKENDS = (SQLITE_BACKEND,)
+
+
+def import_squery(conf):
+    backend = conf['database.backend']
+    if backend == SQLITE_BACKEND:
+        from squery_lite.squery import Database, DatabaseContainer
+    elif backend == POSTGRES_BACKEND:
+        from squery_pg.squery_pg import Database, DatabaseContainer
+    else:
+        raise ValueError('Unknown database backend: {}'.format(backend))
+
+    return (Database, DatabaseContainer)
+
+
+def is_serverless(conf):
+    return conf['database.backend'] in SERVERLESS_DATABASE_BACKENDS
 
 
 def ensure_dir(path):
@@ -22,28 +40,45 @@ def ensure_dir(path):
         os.makedirs(path)
 
 
+def get_database_path(conf, name):
+    return os.path.abspath(os.path.join(conf['database.path'], name + '.db'))
+
+
 def get_database_configs(conf):
+    serverless = is_serverless(conf)
     databases = dict()
     for pkg_name, db_names in conf['database.sources'].items():
         for name in db_names:
-            databases[name] = dict(package_name=pkg_name)
+            database = get_database_path(conf, name) if serverless else name
+            databases[name] = dict(package_name=pkg_name,
+                                   database=database)
     return databases
 
 
-def get_databases(db_confs, host, port, user, password, debug=False):
-    databases = dict((db_name, Database.connect(host,
-                                                port,
-                                                db_name,
-                                                user,
-                                                password,
-                                                debug=debug))
-                     for db_name, db_config in db_confs.items())
-    return DatabaseContainer(databases)
+def get_databases(database_cls, container_cls, db_confs, host, port, user,
+                  password, debug=False):
+    databases = dict((name,
+                      database_cls.connect(host=host,
+                                           port=port,
+                                           database=db_config['database'],
+                                           user=user,
+                                           password=password,
+                                           debug=debug))
+                     for name, db_config in db_confs.items())
+    return container_cls(databases, debug=debug)
 
 
 def init_databases(config):
+    (database_cls, container_cls) = import_squery(config)
     database_configs = get_database_configs(config)
-    databases = get_databases(database_configs,
+    if is_serverless(config):
+        # Make sure all necessary directories are present
+        for db_config in database_configs.values():
+            ensure_dir(os.path.dirname(db_config['database']))
+
+    databases = get_databases(database_cls,
+                              container_cls,
+                              database_configs,
                               config['database.host'],
                               config['database.port'],
                               config['database.user'],
@@ -53,7 +88,7 @@ def init_databases(config):
     for db_name, db_config in database_configs.items():
         migration_pkg = '{0}.migrations.{1}'.format(db_config['package_name'],
                                                     db_name)
-        migrate(databases[db_name], migration_pkg, config)
+        database_cls.migrate(databases[db_name], migration_pkg, config)
 
     return databases
 
