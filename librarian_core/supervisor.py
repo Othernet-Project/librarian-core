@@ -82,6 +82,9 @@ class Supervisor:
         except EarlyExit as exc:
             # One of the command line handlers probably requested early exit
             sys.exit(exc.exit_code)
+        except Exception:
+            logging.exception("An error occurred during `init_complete`.")
+            raise
 
     def _load_config(self, path, strict=True):
         path = os.path.abspath(path)
