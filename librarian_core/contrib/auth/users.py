@@ -162,10 +162,9 @@ class User(BaseUser):
         """ Set password using provided clear-text password """
         password = cls.encrypt_password(clear_text)
         query = db.Update('users',
-                          password='%(password)s',
+                          password=password,
                           where='username = %(username)s')
-        db.execute(query, dict(username=username,
-                               password=password))
+        db.execute(query, dict(username=username))
 
     @staticmethod
     def encrypt_password(password):
