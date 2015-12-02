@@ -13,6 +13,7 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 import functools
 
 import bottle
+from bottle_utils.common import attr_escape
 
 from mako.template import Template
 from mako.lookup import TemplateLookup
@@ -28,6 +29,7 @@ class MakoTemplate(bottle.BaseTemplate):
         lookup = TemplateLookup(directories=self.lookup,
                                 filesystem_checks=is_debug,
                                 module_directory=module_directory,
+                                default_filters=['h', 'unicode'],
                                 **options)
         if self.source:
             self.tpl = Template(self.source, lookup=lookup, **options)
