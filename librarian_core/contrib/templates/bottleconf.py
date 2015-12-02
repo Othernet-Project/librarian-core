@@ -6,7 +6,7 @@ import bottle
 
 from bottle_utils import csrf
 from bottle_utils import html
-from bottle_utils.common import to_unicode
+from bottle_utils.common import to_unicode, html_escape, attr_escape
 
 from .decorators import template_helper
 
@@ -36,6 +36,8 @@ def configure_bottle(supervisor):
         'DEBUG': bottle.DEBUG,
         'request': bottle.request,
         'h': html,
+        'esc': html_escape,
+        'aesc': attr_escape,
         'th': template_helper,
         'url': supervisor.app.get_url,
         'csrf_tag': csrf.csrf_tag,
