@@ -100,6 +100,8 @@ class User(BaseUser):
     def from_username(cls, username, db):
         query = db.Select(sets='users', where='username = %s')
         user = db.fetchone(query, (username,))
+        if user is None:
+            return None
         return cls(**row_to_dict(user))
 
     @classmethod
@@ -110,6 +112,8 @@ class User(BaseUser):
         hashed_token = sha1.hexdigest()
         query = db.Select(sets='users', where='reset_token = %s')
         user = db.fetchone(query, (hashed_token,))
+        if user is None:
+            return None
         return cls(**row_to_dict(user))
 
     @classmethod
