@@ -8,6 +8,7 @@ from gevent import pywsgi, sleep
 from .confloader import get_config_path, ConfDict
 from .dependencies import DependencyLoader
 from .exts import ExtContainer
+from .logs import configure_logger
 from .pubsub import PubSub
 from .signal_handlers import on_interrupt
 
@@ -65,6 +66,7 @@ class Supervisor:
 
         # Load core configuration
         self._configure(root_dir)
+        configure_logger(self.config)
 
         # Load components
         self._load_components()

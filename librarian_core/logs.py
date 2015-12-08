@@ -2,7 +2,7 @@ import logging.config
 import sys
 
 
-def configure(supervisor):
+def configure_logger(config):
     logging.config.dictConfig({
         'version': 1,
         'root': {
@@ -13,9 +13,9 @@ def configure(supervisor):
             'file': {
                 'class': 'logging.handlers.RotatingFileHandler',
                 'formatter': 'default',
-                'filename': supervisor.config['logging.output'],
-                'maxBytes': supervisor.config['logging.size'],
-                'backupCount': supervisor.config['logging.backups'],
+                'filename': config['logging.output'],
+                'maxBytes': config['logging.size'],
+                'backupCount': config['logging.backups'],
             },
             'console': {
                 'class': 'logging.StreamHandler',
@@ -25,8 +25,8 @@ def configure(supervisor):
         },
         'formatters': {
             'default': {
-                'format': supervisor.config['logging.format'],
-                'datefmt': supervisor.config['logging.date_format'],
+                'format': config['logging.format'],
+                'datefmt': config['logging.date_format'],
             },
         },
     })
