@@ -61,10 +61,15 @@ def all_404(path):
 
 
 def routes(config):
-    return (
-        ('sys:root', root_handler, 'GET', '/', dict()),
+    route_config = (
         # This route handler is added because unhandled missing pages cause
         # bottle to _not_ install any plugins, and some are essential to
         # rendering of the 404 page (e.g., i18n, sessions, auth).
         ('sys:all404', all_404, ['GET', 'POST'], '<path:path>', dict()),
     )
+    if config.get('app.default_route'):
+        route_config = (
+            ('sys:root', root_handler, 'GET', '/', dict()),
+        ) + route_config
+
+    return route_config
