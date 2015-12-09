@@ -13,7 +13,8 @@ import logging
 from bottle import request, redirect, abort
 from bottle_utils.i18n import i18n_url
 
-from librarian_core.contrib.templates.renderer import view
+from ..i18n.utils import is_i18n_enabled
+from ..templates.renderer import view
 
 
 def root_handler():
@@ -21,7 +22,12 @@ def root_handler():
     if hasattr(request, 'default_route'):
         route = request.default_route
 
-    redirect(i18n_url(route))
+    if is_i18n_enabled():
+        url = i18n_url(route)
+    else:
+        url = request.app.get_url(route)
+
+    redirect(url)
 
 
 @view('errors/403')

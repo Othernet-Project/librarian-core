@@ -13,5 +13,11 @@ def set_current_locale(code):
     i18n.set_locale(code)
 
 
-def get_enabled_locales():
-    return request.app.supervisor.config.get('i18n.locales', ['en'])
+def get_enabled_locales(config=None):
+    config = config or request.app.supervisor.config
+    return config.get('i18n.locales', ['en'])
+
+
+def is_i18n_enabled(config=None):
+    config = config or request.app.supervisor.config
+    return config.get('i18n.enabled', False)
