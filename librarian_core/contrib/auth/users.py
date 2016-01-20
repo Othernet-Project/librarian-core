@@ -106,6 +106,15 @@ class User(BaseUser):
 
     @classmethod
     @identify_database
+    def from_group(cls, group, db):
+        query = db.Select(sets='users', where='groups = %s')
+        users = db.fetchall(query, (group,))
+        if users is None:
+            return None
+        return [cls(**row_to_dict(user)) for user in users]
+
+    @classmethod
+    @identify_database
     def from_reset_token(cls, token, db):
         sha1 = hashlib.sha1()
         sha1.update(token.encode('utf8'))
