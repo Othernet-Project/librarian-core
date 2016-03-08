@@ -24,6 +24,7 @@ setup(
         'chainable-validators',
         'cssmin',
         'gevent',
+        'greentasks',
         'Mako',
         'pbkdf2',
         'psycopg2',

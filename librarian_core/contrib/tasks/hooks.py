@@ -1,4 +1,4 @@
-from .scheduler import TaskScheduler
+from greentasks.scheduler import TaskScheduler
 
 
 def initialize(supervisor):

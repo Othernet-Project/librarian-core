@@ -43,6 +43,7 @@ The component has the following dependencies:
 - chainable-validators_
 - cssmin_
 - gevent_
+- greentasks_
 - Mako_
 - pbkdf2_
 - psycopg2_
@@ -57,6 +58,7 @@ The component has the following dependencies:
 .. _chainable-validators: https://github.com/Outernet-Project/chainable-validators
 .. _cssmin: https://pypi.python.org/pypi/cssmin
 .. _gevent: http://www.gevent.org/
+.. _greentasks: https://github.com/Outernet-Project/greentasks 
 .. _mako: http://www.makotemplates.org/
 .. _pbkdf2: https://www.dlitz.net/software/python-pbkdf2/
 .. _psycopg2: http://initd.org/psycopg/
