@@ -206,3 +206,6 @@ class ExtContainer(object):
         :param extensions:  names of extensions
         """
         self._ignore.extend(extensions)
+
+
+ext_container = ExtContainer()

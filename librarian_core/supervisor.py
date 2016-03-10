@@ -7,7 +7,7 @@ from gevent import pywsgi, sleep
 
 from .confloader import get_config_path, ConfDict
 from .dependencies import DependencyLoader
-from .exts import ExtContainer
+from .exts import ext_container
 from .logs import configure_logger
 from .pubsub import PubSub
 from .signal_handlers import on_interrupt
@@ -61,7 +61,7 @@ class Supervisor:
         self.server = None
         self.app = self.wsgi = Bottle()
         self.app.supervisor = self
-        self.exts = ExtContainer()
+        self.exts = ext_container
         self.exts.events = PubSub()
 
         # Load core configuration
