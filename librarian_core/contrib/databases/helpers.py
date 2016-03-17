@@ -49,9 +49,9 @@ def get_database_configs(conf):
     databases = dict()
     for pkg_name, db_names in conf['database.sources'].items():
         for name in db_names:
-            database = get_database_path(conf, name) if serverless else name
-            databases[name] = dict(package_name=pkg_name,
-                                   database=database)
+            databases[name] = dict(package_name=pkg_name, database=name)
+            if not serverless:
+                databases[name]['path'] = get_database_path(conf, name)
     return databases
 
 
@@ -61,6 +61,7 @@ def get_databases(database_cls, container_cls, db_confs, host, port, user,
                       database_cls.connect(host=host,
                                            port=port,
                                            database=db_config['database'],
+                                           path=db_config['path'],
                                            user=user,
                                            password=password,
                                            debug=debug))
