@@ -9,8 +9,8 @@ class PermissionDenied(Exception):
     pass
 
 
-def permission_required(*permissions, user_getter=lambda: request.user,
-                        denied_exception_class=PermissionDenied):
+def permission_required(user_getter=lambda: request.user,
+                        denied_exception_class=PermissionDenied, *permissions):
     """Decorator to protect a function from being invoked if the user that is
     trying to access it has no permission to do so. Usage:
 
