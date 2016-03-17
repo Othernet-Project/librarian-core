@@ -1,9 +1,9 @@
 SQL = """
 create table sessions
 (
-    session_id varchar primary key,       -- session id
+    session_id varchar primary key unique not null,       -- session id
     data varchar,                         -- arbitary session data
-    expires timestamptz not null          -- timestamp when session expires
+    expires timestamp not null          -- timestamp when session expires
 );
 """
 

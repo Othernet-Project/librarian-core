@@ -18,7 +18,7 @@ class Group(BaseGroup):
     @classmethod
     @identify_database
     def from_name(cls, group_name, db):
-        query = db.Select(sets='groups', where='name = %(name)s')
+        query = db.Select(sets='groups', where='name = :name')
         group = db.fetchone(query, dict(name=group_name))
         group = row_to_dict(group) if group else {}
 

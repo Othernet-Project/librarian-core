@@ -98,7 +98,7 @@ class User(BaseUser):
     @classmethod
     @identify_database
     def from_username(cls, username, db):
-        query = db.Select(sets='users', where='username = %s')
+        query = db.Select(sets='users', where='username = ?')
         user = db.fetchone(query, (username,))
         if user is None:
             return None
@@ -107,7 +107,7 @@ class User(BaseUser):
     @classmethod
     @identify_database
     def from_group(cls, group, db):
-        query = db.Select(sets='users', where='groups = %s')
+        query = db.Select(sets='users', where='groups = ?')
         users = db.fetchall(query, (group,))
         if users is None:
             return None
@@ -119,7 +119,7 @@ class User(BaseUser):
         sha1 = hashlib.sha1()
         sha1.update(token.encode('utf8'))
         hashed_token = sha1.hexdigest()
-        query = db.Select(sets='users', where='reset_token = %s')
+        query = db.Select(sets='users', where='reset_token = ?')
         user = db.fetchone(query, (hashed_token,))
         if user is None:
             return None
@@ -175,8 +175,8 @@ class User(BaseUser):
         """ Set password using provided clear-text password """
         password = cls.encrypt_password(clear_text)
         query = db.Update('users',
-                          password='%(password)s',
-                          where='username = %(username)s')
+                          password=':password',
+                          where='username = :username')
         db.execute(query, dict(username=username, password=password))
 
     @staticmethod

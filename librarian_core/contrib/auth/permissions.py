@@ -20,7 +20,7 @@ class BaseDynamicPermission(BasePermission):
     def _load(self):
         q = self.db.Select(
             sets='permissions',
-            where='name = %(name)s AND identifier = %(identifier)s'
+            where='name = :name AND identifier = :identifier'
         )
         result = self.db.fetchone(q, dict(name=self.name,
                                           identifier=self.identifier))
