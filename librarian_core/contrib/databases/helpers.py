@@ -12,26 +12,17 @@ import os
 
 import bottle
 
+from squery import Database, DatabaseContainer
+
 
 POSTGRES_BACKEND = 'postgres'
 SQLITE_BACKEND = 'sqlite'
-SERVERLESS_DATABASE_BACKENDS = (SQLITE_BACKEND,)
+SQLIZATOR_BACKEND = 'sqlizator'
+PATHS_CONFIGURABLE = (SQLITE_BACKEND, SQLIZATOR_BACKEND)
 
 
-def import_squery(conf):
-    backend = conf['database.backend']
-    if backend == SQLITE_BACKEND:
-        from squery_lite.squery import Database, DatabaseContainer
-    elif backend == POSTGRES_BACKEND:
-        from squery_pg.squery_pg import Database, DatabaseContainer
-    else:
-        raise ValueError('Unknown database backend: {}'.format(backend))
-
-    return (Database, DatabaseContainer)
-
-
-def is_serverless(conf):
-    return conf['database.backend'] in SERVERLESS_DATABASE_BACKENDS
+def is_path_configurable(conf):
+    return conf['database.backend'] in PATHS_CONFIGURABLE
 
 
 def ensure_dir(path):
@@ -45,41 +36,37 @@ def get_database_path(conf, name):
 
 
 def get_database_configs(conf):
-    serverless = is_serverless(conf)
     databases = dict()
     for pkg_name, db_names in conf['database.sources'].items():
         for name in db_names:
-            databases[name] = dict(package_name=pkg_name, database=name)
-            if not serverless:
-                databases[name]['path'] = get_database_path(conf, name)
+            databases[name] = dict(package_name=pkg_name,
+                                   database=name,
+                                   path=get_database_path(conf, name))
     return databases
 
 
-def get_databases(database_cls, container_cls, db_confs, host, port, user,
-                  password, debug=False):
-    databases = dict((name,
-                      database_cls.connect(host=host,
-                                           port=port,
-                                           database=db_config['database'],
-                                           path=db_config['path'],
-                                           user=user,
-                                           password=password,
-                                           debug=debug))
+def get_databases(db_confs, backend, host, port, user, password, debug=False):
+    databases = dict((name, Database.connect(backend,
+                                             host=host,
+                                             port=port,
+                                             database=db_config['database'],
+                                             path=db_config['path'],
+                                             user=user,
+                                             password=password,
+                                             debug=debug))
                      for name, db_config in db_confs.items())
-    return container_cls(databases, debug=debug)
+    return DatabaseContainer(databases, debug=debug)
 
 
 def init_databases(config):
-    (database_cls, container_cls) = import_squery(config)
     database_configs = get_database_configs(config)
-    if is_serverless(config):
+    if is_path_configurable(config):
         # Make sure all necessary directories are present
         for db_config in database_configs.values():
-            ensure_dir(os.path.dirname(db_config['database']))
+            ensure_dir(os.path.dirname(db_config['path']))
 
-    databases = get_databases(database_cls,
-                              container_cls,
-                              database_configs,
+    databases = get_databases(database_configs,
+                              config['database.backend'],
                               config['database.host'],
                               config['database.port'],
                               config['database.user'],
@@ -89,7 +76,7 @@ def init_databases(config):
     for db_name, db_config in database_configs.items():
         migration_pkg = '{0}.migrations.{1}'.format(db_config['package_name'],
                                                     db_name)
-        database_cls.migrate(databases[db_name], migration_pkg, config)
+        Database.migrate(databases[db_name], migration_pkg, config)
 
     return databases
 
