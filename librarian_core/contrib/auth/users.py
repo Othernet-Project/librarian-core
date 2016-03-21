@@ -67,7 +67,6 @@ class User(BaseUser):
     @authenticated_only
     def save(self):
         query = self.db.Replace('users',
-                                constraints=['username'],
                                 cols=('username',
                                       'password',
                                       'reset_token',
