@@ -32,6 +32,7 @@ setup(
         'pytz',
         'squery-pg',
         'webassets',
+        'confloader>=1.0',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

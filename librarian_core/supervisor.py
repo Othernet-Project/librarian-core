@@ -4,8 +4,8 @@ import sys
 
 from bottle import Bottle
 from gevent import pywsgi, sleep
+from confloader import get_config_path, ConfDict
 
-from .confloader import get_config_path, ConfDict
 from .dependencies import DependencyLoader
 from .exts import ext_container
 from .logs import configure_logger
@@ -23,6 +23,10 @@ class EarlyExit(Exception):
 class Supervisor:
     LOOP_INTERVAL = 5  # in seconds
     DEFAULT_CONFIG_FILENAME = 'config.ini'
+    CONFIG_DEFAULTS = {
+        'autojson': True,
+        'catchall': True
+    }
 
     INITIALIZE = 'initialize'
     COMPONENT_MEMBER_LOADED = 'component_member_loaded'
@@ -90,14 +94,9 @@ class Supervisor:
 
     def _load_config(self, path, strict=True):
         path = os.path.abspath(path)
-        base_path = os.path.dirname(path)
         if not strict and not os.path.exists(path):
             return ConfDict()
-
-        return ConfDict.from_file(path,
-                                  base_dir=base_path,
-                                  catchall=True,
-                                  autojson=True)
+        return ConfDict.from_file(path, defaults=self.CONFIG_DEFAULTS)
 
     def _merge_config(self, config):
         # merge component config into global config, but without overwriting
@@ -158,8 +157,8 @@ class Supervisor:
         handler = self.COMPONENT_META[member['type']]['handler']
         config_path = os.path.join(member['pkg_path'],
                                    self.DEFAULT_CONFIG_FILENAME)
-        config = self._load_config(config_path, strict=False)
-        self._merge_config(config)
+        config = self.config.import_from_file(config_path, as_defaults=True,
+                                              ignore_missing=True)
         handler(self, **member)
         # notify possibly other components that a new component has been
         # installed successfully
