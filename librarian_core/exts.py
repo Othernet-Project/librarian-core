@@ -11,6 +11,8 @@ file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 import functools
 import logging
 
+from Queue import Queue, Empty as QueueEmpty
+
 
 class ExtensionAlreadyExists(Exception):
     pass
@@ -38,6 +40,7 @@ class Placeholder(object):
         self.__attrpath = attrpath
         self.__parent = parent
         self.__onfail = onfail
+        self.__resolved = Nothing
 
     def __call__(self, *args, **kwargs):
         if self.__onfail is not Nothing:
@@ -49,16 +52,27 @@ class Placeholder(object):
             return self.__onfail
         # default behavior: store the called method name and params and return
         # the same ``Placeholder`` object to continue with the charade
-        self.__parent.store_call(self.__name, self.__attrpath, args, kwargs)
+        self.__parent.store_call(self.__name,
+                                 self.__attrpath,
+                                 args,
+                                 kwargs,
+                                 self.__resolve)
         return self
 
     def __getattr__(self, attrname):
+        # later access to ``Placeholder`` objects e.g. during replay calls
+        # should be delegated to their resolved state, if it became available
+        if self.__resolved is not Nothing:
+            return getattr(self.__resolved, attrname)
         # create a new ``Placeholder`` with the same configuration, just add
         # the nested attribute name to the exisiting name
         return Placeholder(self.__name,
                            '.'.join([self.__attrpath, attrname]),
                            self.__parent,
                            self.__onfail)
+
+    def __resolve(self, result):
+        self.__resolved = result
 
 
 class ExtContainer(object):
@@ -128,6 +142,11 @@ class ExtContainer(object):
         self._extensions[name] = extension
         self.__replay_calls(name, extension)
 
+    def __resolve(self, obj):
+        if isinstance(obj, Placeholder):
+            return obj._Placeholder__resolved
+        return obj
+
     def __invoke(self, extension, attrpath, args, kwargs):
         attrs = [attr for attr in attrpath.split('.') if attr]
         try:
@@ -136,16 +155,26 @@ class ExtContainer(object):
             logging.error("Recorded calls on {0} cannot be replayed "
                           "retroactively.".format(attrpath))
         else:
-            method(*args, **kwargs)
+            args = [self.__resolve(arg) for arg in args]
+            kwargs = dict((k, self.__resolve(v)) for (k, v) in kwargs.items())
+            return method(*args, **kwargs)
 
     def __replay_calls(self, name, extension):
-        calls = self._calls.pop(name, None)
-        if not calls:  # there were no registered calls, nothing to be done
+        queue = self._calls.pop(name, None)
+        if not queue:  # there were no registered calls, nothing to be done
             return
-
         # retroactively invoke all the methods on the actual extension
-        for (attrpath, args, kwargs) in calls:
-            self.__invoke(extension, attrpath, args, kwargs)
+        while True:
+            try:
+                record = queue.get(block=False)
+            except QueueEmpty:
+                break
+            else:
+                (attrpath, args, kwargs, resolve_cb) = record
+                result = self.__invoke(extension, attrpath, args, kwargs)
+                # resolve a ``Placeholder`` so that it has access to the
+                # return value it was expected to represent when invoked
+                resolve_cb(result)
 
     def __getattr__(self, name):
         return self.__get_extension(name)
@@ -171,13 +200,13 @@ class ExtContainer(object):
                             calls=self._calls,
                             ignore=self._ignore)
 
-    def store_call(self, name, attrpath, args, kwargs):
+    def store_call(self, name, attrpath, args, kwargs, resolve_cb):
         """Called by ``Placeholder`` objects to record calls to extension
         methods which will be replayed later when the extension is installed.
         """
         if name not in self._ignore:
-            self._calls.setdefault(name, [])
-            self._calls[name].append((attrpath, args, kwargs))
+            self._calls.setdefault(name, Queue())
+            self._calls[name].put((attrpath, args, kwargs, resolve_cb))
 
     def is_installed(self, name):
         """Check whether extension known by ``name`` is installed or not.
