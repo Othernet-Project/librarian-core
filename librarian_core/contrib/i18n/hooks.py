@@ -7,6 +7,14 @@ from .consts import LANGS
 from .xmsgs import collect_messages, add_message_source_path
 
 
+EXPORTS = {
+    'initialize': {
+        'depends_on': ['librarian_core.contrib.templates.hooks.initialize']
+    },
+    'component_member_loaded': {},
+}
+
+
 def component_member_loaded(supervisor, member, config):
     add_message_source_path(member['pkg_path'])
 
