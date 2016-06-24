@@ -88,7 +88,7 @@ def init_databases(config):
     for db_name, db_config in database_configs.items():
         migration_pkg = '{0}.migrations.{1}'.format(db_config['package_name'],
                                                     db_name)
-        database_cls.migrate(databases[db_name], migration_pkg, config)
+        database_cls.migrate(databases[db_name], db_config['package_name'], migration_pkg, config)
 
     return databases
 
